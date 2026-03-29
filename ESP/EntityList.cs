@@ -15,7 +15,36 @@ namespace ExtrasensoryPerception.ESP;
 internal static class EntityList
 {
     private static EntityManager EntityManager => VWorld.EntityManager;
-    public static Entity LocalPlayer;
+
+    private static Entity _localCharacter;
+    private static Entity _localUser;
+
+    public static Entity LocalCharacter
+    {
+        get
+        {
+            if (_localCharacter != Entity.Null)
+                return _localCharacter;
+            if (ConsoleShared.TryGetLocalCharacterInCurrentWorld(out _localCharacter, VWorld.Game))
+                return _localCharacter;
+            return Entity.Null;
+        }
+    }
+
+    public static Entity LocalUser
+    {
+        get
+        {
+            if (_localUser != Entity.Null)
+                return _localUser;
+            if (ConsoleShared.TryGetLocalUserInCurrentWorld(out _localUser, VWorld.Game))
+                return _localUser;
+            return Entity.Null;
+        }
+    }
+
+    // Alias para compatibilidade
+    public static Entity LocalPlayer => LocalCharacter;
 
     private static EntityQuery _localPlayerQuery;
     internal static EntityQuery Players;

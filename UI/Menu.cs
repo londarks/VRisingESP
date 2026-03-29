@@ -9,7 +9,7 @@ namespace ExtrasensoryPerception.UI;
 
 internal class Menu : MonoBehaviour
 {
-	private static Rect _windowRect = new Rect(20f, 20f, 300f, 750f);
+	private static Rect _windowRect = new Rect(20f, 20f, 300f, 900f);
 
 	private Rect _aimbotSettingsRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y, 300f, 500f);
 
@@ -17,9 +17,9 @@ internal class Menu : MonoBehaviour
 
 	private bool _showAimbotSettings;
 
-	private readonly string[] _boxTypes = new string[2] { "Full Boxes", "Corners Only" };
+	private readonly string[] _boxTypes = new string[2] { "Caixas Cheias", "Apenas Cantos" };
 
-	private readonly string[] _aimbotTypes = new string[2] { "Hold", "Toggle" };
+	private readonly string[] _aimbotTypes = new string[2] { "Segurar", "Alternar" };
 
 	private void OnGUI()
 	{
@@ -35,7 +35,7 @@ internal class Menu : MonoBehaviour
 			_windowRect = GUI.Window(1, _windowRect, (GUI.WindowFunction)DrawWindow, "vMenu", MenuTheme.WindowStyle);
 			if (_showAimbotSettings)
 			{
-				_aimbotSettingsRect = GUI.Window(2, _aimbotSettingsRect, (GUI.WindowFunction)AimSettingsWindow, "Aimbot Settings", MenuTheme.WindowStyle);
+				_aimbotSettingsRect = GUI.Window(2, _aimbotSettingsRect, (GUI.WindowFunction)AimSettingsWindow, "Config. Mira Automatica", MenuTheme.WindowStyle);
 			}
 		}
 	}
@@ -55,51 +55,51 @@ internal class Menu : MonoBehaviour
 		//IL_027a: Unknown result type (might be due to invalid IL or missing references)
 		//IL_004d: Unknown result type (might be due to invalid IL or missing references)
 		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("General");
+		CustomHeader("Geral");
 		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ModToggle, "Enabled");
-		if (CustomButton("Reset Camera", GUILayout.Width(135f)))
+		CustomToggle(Config.ModToggle, "Ativado");
+		if (CustomButton("Resetar Camera", GUILayout.Width(135f)))
 		{
 			Logic.MainCamera = Camera.main ?? throw new InvalidOperationException();
 		}
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ESP.Boxes, "Draw Boxes");
+		CustomToggle(Config.ESP.Boxes, "Desenhar Caixas");
 		CustomButton(_boxTypes[Config.ESP.Boxes.Option], Config.ESP.Boxes, _boxTypes.Length);
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ESP.Outlines, new GUIContent("Draw Outlines", (Texture)null, "Warning: May cause frame drops."));
-		CustomButton("Quality: {}", Config.ESP.Outlines, 4);
+		CustomToggle(Config.ESP.Outlines, new GUIContent("Desenhar Contornos", (Texture)null, "Aviso: Pode causar queda de FPS."));
+		CustomButton("Qualidade: {}", Config.ESP.Outlines, 4);
 		GUILayout.EndHorizontal();
 		GUILayout.Space(15f);
-		CustomHeader("Aimbot");
+		CustomHeader("Mira Automatica");
 		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.Aimbot.Status, "Enabled");
+		CustomToggle(Config.Aimbot.Status, "Ativado");
 		CustomButton(_aimbotTypes[Config.Aimbot.Mode.Value], Config.Aimbot.Mode, _aimbotTypes.Length);
 		GUILayout.EndHorizontal();
-		if (CustomButton("Settings", GUILayout.ExpandWidth(true)))
+		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
 		{
 			_showAimbotSettings = !_showAimbotSettings;
 		}
 		GUILayout.Space(15f);
 		CustomHeader("ESP");
-		DrawSection("Players", Config.ESP.Players);
+		DrawSection("Jogadores", Config.ESP.Players);
 		DrawSection("VBlood Carriers", Config.ESP.VBloodCarriers);
-		DrawSection("Blood Sources", Config.ESP.BloodSources);
-		DrawSection("Gate Bosses", Config.ESP.GateBosses);
-		DrawSection("Items", Config.ESP.Items);
+		DrawSection("Fontes de Sangue", Config.ESP.BloodSources);
+		DrawSection("Bosses de Portao", Config.ESP.GateBosses);
+		DrawSection("Itens", Config.ESP.Items);
 		DrawSection("Containers", Config.ESP.Containers);
-		DrawSection("Ores", Config.ESP.Ores);
-		DrawSection("Plants", Config.ESP.Plants);
-		DrawSection("Fishing Spots", Config.ESP.FishingSpots);
-		DrawSection("Horses", Config.ESP.Horses);
-		DrawSection("Servants", Config.ESP.Servants);
-		DrawSection("Carriages", Config.ESP.Carriages);
+		DrawSection("Minerios", Config.ESP.Ores);
+		DrawSection("Plantas", Config.ESP.Plants);
+		DrawSection("Pontos de Pesca", Config.ESP.FishingSpots);
+		DrawSection("Cavalos", Config.ESP.Horses);
+		DrawSection("Servos", Config.ESP.Servants);
+		DrawSection("Carruagens", Config.ESP.Carriages);
 		GUILayout.Space(15f);
-		CustomHeader("Extra");
-		CustomToggle(Config.Extras.AutoFishing, "Auto-Fishing");
-		CustomToggle(Config.Extras.AutoLoot, "Auto-Loot (WIP)");
-		CustomToggle(Config.Extras.NoFog, "No Fog");
+		CustomHeader("Extras");
+		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
+		CustomToggle(Config.Extras.AutoLoot, "Loot Automatico");
+		CustomToggle(Config.Extras.NoFog, "Sem Nevoa");
 		GUILayout.EndVertical();
 		ShowTooltip();
 		GUI.DragWindow(new Rect(0f, 0f, _windowRect.width, 20f));
@@ -109,28 +109,28 @@ internal class Menu : MonoBehaviour
 	{
 		//IL_01ab: Unknown result type (might be due to invalid IL or missing references)
 		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("General");
+		CustomHeader("Geral");
 		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.Aimbot.Players, "Players");
+		CustomToggle(Config.Aimbot.Players, "Jogadores");
 		CustomToggle(Config.Aimbot.Bosses, "Bosses");
 		GUILayout.EndHorizontal();
 		CustomToggle(Config.Aimbot.Mobs, "Mobs");
 		GUILayout.Space(20f);
-		CustomToggle(Config.Aimbot.DrawAimPosition, "Draw Aim Position");
+		CustomToggle(Config.Aimbot.DrawAimPosition, "Mostrar Posicao da Mira");
 		GUILayout.Space(15f);
-		CustomHeader("Limits");
-		CustomSlider("Distance: {}m", Config.Aimbot.MaxDistance, 1f, 50f);
-		CustomSlider("Cursor Distance: {}", Config.Aimbot.MaxCursorDistance, 0f, 1000f);
-		CustomSlider("Target Switch CD: {}s", Config.Aimbot.SwitchCooldown, 0f, 1f, "F1");
+		CustomHeader("Limites");
+		CustomSlider("Distancia: {}m", Config.Aimbot.MaxDistance, 1f, 50f);
+		CustomSlider("Dist. do Cursor: {}", Config.Aimbot.MaxCursorDistance, 0f, 1000f);
+		CustomSlider("CD Troca de Alvo: {}s", Config.Aimbot.SwitchCooldown, 0f, 1f, "F1");
 		GUILayout.Space(15f);
-		CustomHeader("Weights");
-		CustomSlider("Distance: {}", Config.Aimbot.DistanceWeight, 0f, 1f, "F2");
-		CustomSlider("Cursor Distance: {}", Config.Aimbot.CursorDistanceWeight, 0f, 1f, "F2");
-		CustomSlider("Health: {}", Config.Aimbot.HealthWeight, 0f, 1f, "F2");
-		CustomSlider("Type: {}", Config.Aimbot.EntityTypeWeight, 0f, 1f, "F2");
+		CustomHeader("Pesos");
+		CustomSlider("Distancia: {}", Config.Aimbot.DistanceWeight, 0f, 1f, "F2");
+		CustomSlider("Dist. Cursor: {}", Config.Aimbot.CursorDistanceWeight, 0f, 1f, "F2");
+		CustomSlider("Vida: {}", Config.Aimbot.HealthWeight, 0f, 1f, "F2");
+		CustomSlider("Tipo: {}", Config.Aimbot.EntityTypeWeight, 0f, 1f, "F2");
 		GUILayout.Space(10f);
 		GUILayout.FlexibleSpace();
-		if (GUILayout.Button("Close", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
+		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
 		{
 			_showAimbotSettings = false;
 		}

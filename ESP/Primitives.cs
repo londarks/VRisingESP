@@ -62,7 +62,7 @@ public static class Primitives
         DrawLine(new Vector2(position.x - halfSize, position.y + halfSize), new Vector2(position.x + halfSize, position.y - halfSize), color);
     }
 
-    private static void DrawLine(Vector2 from, Vector2 to, Color color)
+    public static void DrawLine(Vector2 from, Vector2 to, Color color)
     {
         var prevColor = GUI.color;
         GUI.color = color;

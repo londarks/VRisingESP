@@ -17,9 +17,11 @@ public class Overlay : MonoBehaviour
 		//IL_0036: Unknown result type (might be due to invalid IL or missing references)
 		if ((int)Event.current.type == 7 && Config.ModToggle.Value)
 		{
-if (Plugin.IsInGame && !Plugin.IsMenuOpen)
+			Primitives.DrawString(new Vector2(Screen.width / 2f, 10f), "VRisingESP", Color.green);
+			if (Plugin.IsInGame && !Plugin.IsMenuOpen)
 			{
 				RenderQueue.DrawQueued();
+
 			}
 			RenderQueue.Clear();
 		}
