@@ -24,6 +24,7 @@ public class Overlay : MonoBehaviour
 
 				// Radar
 				Radar.DrawRadar();
+
 			}
 			RenderQueue.Clear();
 		}
