@@ -88,6 +88,9 @@ internal static class Logic
 			ProcessCarriages();
 		}
 
+		// AutoParry: checar projeteis perto da hitbox
+		AutoParry.CheckProjectiles();
+
 	}
 
 	private static void ProcessPlayers()
@@ -151,7 +154,7 @@ internal static class Logic
 				float playerDist = GetDistanceFromPlayer(position);
 
 				// Auto-Parry e Debug (roda sempre, mesmo fora da tela)
-				if (!flag) AutoParry.CheckEnemy(entity, playerDist);
+				if (!flag) AutoParry.CheckEnemy(entity, playerDist, true, false);
 				EntityDebugger.AnalyzeNearbyEntity(entity, componentData.Name.ToString(), playerDist);
 
 				// Radar
@@ -248,7 +251,7 @@ internal static class Logic
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
 
 					// Auto-Parry (VBloods)
-					AutoParry.CheckEnemy(entity, distanceFromPlayer);
+					AutoParry.CheckEnemy(entity, distanceFromPlayer, false, true);
 
 					if (Config.Aimbot.Bosses.Enabled)
 					{
@@ -334,7 +337,7 @@ internal static class Logic
 				float mobDist = GetDistanceFromPlayer(position);
 
 				// Auto-Parry e Debug (roda sempre, mesmo fora da tela)
-				AutoParry.CheckEnemy(entity, mobDist);
+				AutoParry.CheckEnemy(entity, mobDist, false, false);
 				EntityDebugger.AnalyzeNearbyEntity(entity, entity.GetName(), mobDist);
 
 				// Radar - mobs

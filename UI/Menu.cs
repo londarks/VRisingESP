@@ -16,6 +16,8 @@ internal class Menu : MonoBehaviour
 	private bool _showMenu;
 
 	private bool _showAimbotSettings;
+	private bool _showParrySettings;
+	private bool _showRadarSettings;
 
 	private readonly string[] _boxTypes = new string[2] { "Caixas Cheias", "Apenas Cantos" };
 
@@ -36,6 +38,16 @@ internal class Menu : MonoBehaviour
 			if (_showAimbotSettings)
 			{
 				_aimbotSettingsRect = GUI.Window(2, _aimbotSettingsRect, (GUI.WindowFunction)AimSettingsWindow, "Config. Mira Automatica", MenuTheme.WindowStyle);
+			}
+			if (_showParrySettings)
+			{
+				var parryRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y + 200f, 280f, 300f);
+				GUI.Window(3, parryRect, (GUI.WindowFunction)ParrySettingsWindow, "Config. Auto-Parry", MenuTheme.WindowStyle);
+			}
+			if (_showRadarSettings)
+			{
+				var radarRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y + 100f, 280f, 200f);
+				GUI.Window(4, radarRect, (GUI.WindowFunction)RadarSettingsWindow, "Config. Radar", MenuTheme.WindowStyle);
 			}
 		}
 	}
@@ -97,14 +109,18 @@ internal class Menu : MonoBehaviour
 		DrawSection("Carruagens", Config.ESP.Carriages);
 		GUILayout.Space(15f);
 		CustomHeader("Radar");
+		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
 		CustomToggle(Config.Radar.Status, "Ativado");
-		CustomSlider("Tamanho: {}", Config.Radar.Size, 100f, 400f);
-		CustomSlider("Alcance: {}m", Config.Radar.Range, 30f, 200f);
+		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
+			_showRadarSettings = !_showRadarSettings;
+		GUILayout.EndHorizontal();
 		GUILayout.Space(15f);
 		CustomHeader("Auto-Parry");
+		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
 		CustomToggle(Config.AutoParry.Status, "Ativado");
-		CustomSlider("Alcance: {}m", Config.AutoParry.Range, 1f, 5f);
-		CustomSlider("Cooldown: {}s", Config.AutoParry.Cooldown, 0.1f, 1f, "F2");
+		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
+			_showParrySettings = !_showParrySettings;
+		GUILayout.EndHorizontal();
 		GUILayout.Space(15f);
 		CustomHeader("Extras");
 		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
@@ -146,6 +162,37 @@ internal class Menu : MonoBehaviour
 		}
 		GUILayout.EndVertical();
 		GUI.DragWindow(new Rect(0f, 0f, _aimbotSettingsRect.width, 20f));
+	}
+
+	private void ParrySettingsWindow(int windowID)
+	{
+		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
+		CustomHeader("Alvos");
+		CustomToggle(Config.AutoParry.Players, "Jogadores");
+		CustomToggle(Config.AutoParry.Bosses, "Bosses");
+		CustomToggle(Config.AutoParry.Mobs, "Mobs");
+		GUILayout.Space(15f);
+		CustomHeader("Ajustes");
+		CustomSlider("Alcance Melee: {}m", Config.AutoParry.Range, 1f, 5f);
+		CustomSlider("Cooldown: {}s", Config.AutoParry.Cooldown, 0.05f, 1f, "F2");
+		GUILayout.Space(10f);
+		GUILayout.FlexibleSpace();
+		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
+			_showParrySettings = false;
+		GUILayout.EndVertical();
+	}
+
+	private void RadarSettingsWindow(int windowID)
+	{
+		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
+		CustomHeader("Ajustes");
+		CustomSlider("Tamanho: {}", Config.Radar.Size, 100f, 400f);
+		CustomSlider("Alcance: {}m", Config.Radar.Range, 30f, 200f);
+		GUILayout.Space(10f);
+		GUILayout.FlexibleSpace();
+		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
+			_showRadarSettings = false;
+		GUILayout.EndVertical();
 	}
 
 	private static bool CustomButton(string label, params GUILayoutOption[] options)
