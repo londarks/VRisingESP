@@ -73,6 +73,12 @@ public static class EntityDebugger
             if (localChar.TryGetComponent<Health>(out var health))
                 sb.AppendLine($"HP: {health.Value:F0}/{health.MaxHealth.Value:F0}");
 
+            // CollisionRadius
+            if (localChar.TryGetComponent<CollisionRadius>(out var myRadius))
+                sb.AppendLine($"CollisionRadius: {myRadius.Radius:F3}");
+            else
+                sb.AppendLine("CollisionRadius: NAO TEM");
+
             // AbilityBar_Shared
             if (localChar.TryGetComponent<AbilityBar_Shared>(out var bar))
             {
@@ -237,6 +243,13 @@ public static class EntityDebugger
             bool changed = false;
             string changes = "";
 
+            // CollisionRadius do mob
+            float mobCollisionRadius = 0f;
+            if (entity.TryGetComponent<CollisionRadius>(out var collRadius))
+            {
+                mobCollisionRadius = collRadius.Radius;
+            }
+
             // Direção e mira do mob
             string aimInfo = "";
             bool aimingAtPlayer = false;
@@ -286,7 +299,30 @@ public static class EntityDebugger
                         aimInfo += $" RotFwd=({forward.x:F2},{forward.z:F2}) rotDot={dotRot:F2}";
                     }
 
-                    aimInfo += aimingAtPlayer ? " >>> MIRANDO EM VOCE!" : " >>> NAO MIRA EM VOCE";
+                    // CollisionRadius do player
+                    float playerRadius = 0f;
+                    if (localChar.TryGetComponent<CollisionRadius>(out var playerCollRadius))
+                        playerRadius = playerCollRadius.Radius;
+
+                    // Calcular se o ataque vai atingir baseado na geometria
+                    // Distancia do player à linha de mira do mob
+                    if (entity.TryGetComponent<TargetDirection>(out var td2))
+                    {
+                        Vector3 aimDir2 = new Vector3(td2.AimDirection.x, 0, td2.AimDirection.z).normalized;
+                        // Ponto mais proximo na linha de mira ao player
+                        Vector3 toPlayer2 = playerPos - mobPos;
+                        float projLen = Vector3.Dot(toPlayer2, aimDir2);
+                        Vector3 closestPoint = mobPos + aimDir2 * projLen;
+                        float distToLine = Vector3.Distance(playerPos, closestPoint);
+                        aimInfo += $" PlayerRadius={playerRadius:F2} MobRadius={mobCollisionRadius:F2} DistToAimLine={distToLine:F2}m";
+
+                        // Se distancia do player à linha de mira < soma dos raios, vai atingir
+                        float hitThreshold = playerRadius + mobCollisionRadius + 0.5f;
+                        bool willHit = distToLine < hitThreshold && projLen > 0;
+                        aimInfo += willHit ? " >>> VAI ATINGIR!" : " >>> VAI ERRAR";
+                    }
+
+                    aimInfo += aimingAtPlayer ? " MIRANDO" : " NAO_MIRA";
                 }
             }
 

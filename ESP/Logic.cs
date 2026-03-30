@@ -147,20 +147,20 @@ internal static class Logic
 			if (CheckEntity(entity) && entity.TryGetComponent<PlayerCharacter>(out PlayerCharacter componentData) && !(entity == EntityList.LocalPlayer) && entity.TryGetComponent<Blood>(out Blood componentData2) && entity.TryGetComponent<Health>(out Health componentData3) && entity.TryGetComponent<Equipment>(out Equipment componentData4))
 			{
 				Vector3 position = entity.GetPosition();
+				bool flag = entity.IsAlly(EntityList.LocalPlayer);
+				float playerDist = GetDistanceFromPlayer(position);
+
+				// Auto-Parry e Debug (roda sempre, mesmo fora da tela)
+				if (!flag) AutoParry.CheckEnemy(entity, playerDist);
+				EntityDebugger.AnalyzeNearbyEntity(entity, componentData.Name.ToString(), playerDist);
+
+				// Radar
+				Color radarColor = flag ? Color.green : Color.red;
+				Radar.AddEntity(position, radarColor, componentData.Name.ToString(), !flag);
+
 				if (GetScreenPoint(position, out var screenPoint))
 				{
-					bool flag = entity.IsAlly(EntityList.LocalPlayer);
-					float distanceFromPlayer = GetDistanceFromPlayer(position);
-
-					// Radar
-					Color radarColor = flag ? Color.green : Color.red;
-					Radar.AddEntity(position, radarColor, componentData.Name.ToString(), !flag);
-
-					// Debug
-					EntityDebugger.AnalyzeNearbyEntity(entity, componentData.Name.ToString(), distanceFromPlayer);
-
-					// Auto-Parry (players inimigos)
-					if (!flag) AutoParry.CheckEnemy(entity, distanceFromPlayer);
+					float distanceFromPlayer = playerDist;
 
 					if (Config.Aimbot.Players.Enabled && !flag)
 					{
@@ -331,6 +331,11 @@ internal static class Logic
 			if (CheckEntity(entity) && entity.TryGetComponent<BloodConsumeSource>(out BloodConsumeSource componentData))
 			{
 				Vector3 position = entity.GetPosition();
+				float mobDist = GetDistanceFromPlayer(position);
+
+				// Auto-Parry e Debug (roda sempre, mesmo fora da tela)
+				AutoParry.CheckEnemy(entity, mobDist);
+				EntityDebugger.AnalyzeNearbyEntity(entity, entity.GetName(), mobDist);
 
 				// Radar - mobs
 				if (componentData.BloodQuality >= Config.ESP.BloodSources.MinimumQuality)
@@ -338,13 +343,7 @@ internal static class Logic
 
 				if (GetScreenPoint(position, out var screenPoint))
 				{
-					float distanceFromPlayer = GetDistanceFromPlayer(position);
-
-					// Debug
-					EntityDebugger.AnalyzeNearbyEntity(entity, entity.GetName(), distanceFromPlayer);
-
-					// Auto-Parry (mobs)
-					AutoParry.CheckEnemy(entity, distanceFromPlayer);
+					float distanceFromPlayer = mobDist;
 
 					if (Config.Aimbot.Mobs.Enabled)
 					{

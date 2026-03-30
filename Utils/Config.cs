@@ -182,9 +182,9 @@ internal static class Config
 	internal static class AutoParry
 	{
 		internal static readonly FeatureConfig Status = new FeatureConfig("AutoParry", "Enabled");
-		internal static readonly ConfigEntry<KeyCode> ParryKey = ConfigFile.Bind<KeyCode>("AutoParry", "ParryKey", KeyCode.Mouse5, "Tecla do parry (Mouse5 no jogo).");
+		internal static readonly ConfigEntry<KeyCode> ParryKey = ConfigFile.Bind<KeyCode>("AutoParry", "ParryKey", KeyCode.G, "Tecla do parry.");
 		internal static readonly ConfigEntry<float> Range = ConfigFile.Bind<float>("AutoParry", "Range", 8f, "Distancia maxima pra ativar parry (metros).");
-		internal static readonly ConfigEntry<float> Cooldown = ConfigFile.Bind<float>("AutoParry", "Cooldown", 1.5f, "Cooldown entre parrys (segundos).");
+		internal static readonly ConfigEntry<float> Cooldown = ConfigFile.Bind<float>("AutoParry", "Cooldown", 0.3f, "Cooldown entre parrys (segundos).");
 		internal static bool Enabled => Status.Enabled;
 	}
 
