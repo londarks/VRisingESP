@@ -5,16 +5,14 @@ namespace ExtrasensoryPerception.ESP;
 
 public class AimController : MonoBehaviour
 {
+	// Smoothing factor for mouse movement (0-1). Lower = smoother but slower.
+	private const float AimSmoothing = 0.45f;
+
+	// Max pixels to move per frame to avoid huge jumps
+	private const float MaxDeltaPerFrame = 80f;
+
 	private void OnGUI()
 	{
-		//IL_0005: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000b: Invalid comparison between Unknown and I4
-		//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0023: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0042: Unknown result type (might be due to invalid IL or missing references)
 		if ((int)Event.current.type == 7 && Config.Aimbot.Enabled && Aimbot.HasValidTarget())
 		{
 			Vector2 aimData = Aimbot.GetAimData();
@@ -27,10 +25,6 @@ public class AimController : MonoBehaviour
 
 	private void Update()
 	{
-		//IL_0008: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0048: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0029: Unknown result type (might be due to invalid IL or missing references)
 		if (!Config.Aimbot.Enabled)
 		{
 			return;
@@ -52,24 +46,32 @@ public class AimController : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		//IL_001e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0023: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0025: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0031: Unknown result type (might be due to invalid IL or missing references)
-		if (Application.isFocused && Config.Aimbot.Enabled && Aimbot.Active && Aimbot.HasValidTarget())
-		{
-			Vector2 aimData = Aimbot.GetAimData();
-			if (aimData != Vector2.zero)
-			{
-				AimAt(aimData);
-			}
-		}
-	}
+		if (!Application.isFocused || !Config.Aimbot.Enabled || !Aimbot.Active || !Aimbot.HasValidTarget())
+			return;
 
-	private static void AimAt(Vector2 aimData)
-	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		MouseSimulator.SetPos(aimData);
+		// Skip if in-game menu is open
+		if (Plugin.IsMenuOpen) return;
+
+		Vector2 delta = Aimbot.GetAimDelta();
+		if (delta == Vector2.zero) return;
+
+		// Apply smoothing: only move a fraction of the delta per frame
+		Vector2 smoothed = delta * AimSmoothing;
+
+		// Clamp to max speed to prevent camera jerking on large jumps
+		if (smoothed.magnitude > MaxDeltaPerFrame)
+		{
+			smoothed = smoothed.normalized * MaxDeltaPerFrame;
+		}
+
+		// Use relative mouse movement — this works WITH V Rising's camera system
+		// instead of fighting it with SetCursorPos
+		int dx = Mathf.RoundToInt(smoothed.x);
+		int dy = Mathf.RoundToInt(smoothed.y);
+
+		if (dx != 0 || dy != 0)
+		{
+			MouseSimulator.MoveDelta(dx, dy);
+		}
 	}
 }

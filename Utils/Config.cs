@@ -186,7 +186,7 @@ internal static class Config
 		internal static readonly FeatureConfig Bosses = new FeatureConfig("AutoParry", "Bosses");
 		internal static readonly FeatureConfig Mobs = new FeatureConfig("AutoParry", "Mobs");
 		internal static readonly ConfigEntry<KeyCode> ParryKey = ConfigFile.Bind<KeyCode>("AutoParry", "ParryKey", KeyCode.G, "Tecla do parry.");
-		internal static readonly ConfigEntry<float> Range = ConfigFile.Bind<float>("AutoParry", "Range", 3f, "Distancia maxima melee (metros).");
+		internal static readonly ConfigEntry<float> Range = ConfigFile.Bind<float>("AutoParry", "Range", 15f, "Distancia maxima para spells ranged (metros). Melee usa 15m fixo.");
 		internal static readonly ConfigEntry<float> Cooldown = ConfigFile.Bind<float>("AutoParry", "Cooldown", 0.15f, "Cooldown entre parrys (segundos).");
 		internal static bool Enabled => Status.Enabled;
 	}

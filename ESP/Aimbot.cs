@@ -41,15 +41,22 @@ public static class Aimbot
 
 	private static bool _hasValidTarget;
 
+	// Smoothing: last valid aim position for interpolation
+	private static Vector2 _smoothedAimPosition = Vector2.zero;
+
+	// How many consecutive frames the target was lost (for grace period)
+	private static int _targetLostFrames;
+
+	// Grace period: keep tracking last known position for N frames before giving up
+	private const int TargetLostGraceFrames = 15;
+
+	// Dead zone: don't move mouse if already within this pixel radius of the target
+	private const float DeadZoneRadius = 3f;
+
 	internal static readonly List<TargetCandidate> Candidates = new List<TargetCandidate>();
 
 	internal static void TryAddCandidate(Entity entity, Vector2 screenPoint, float distance, EntityType type)
 	{
-		//IL_000e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0013: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0035: Unknown result type (might be due to invalid IL or missing references)
 		if (!(distance > Config.Aimbot.MaxDistance.Value))
 		{
 			float num = Vector2.Distance(CursorPosition, screenPoint);
@@ -67,12 +74,6 @@ public static class Aimbot
 
 	private static float CalculateTargetScore(Entity entity, float distance, float screenDistance, EntityType type)
 	{
-		//IL_0026: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0027: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0033: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0034: Unknown result type (might be due to invalid IL or missing references)
 		float num = 1f - distance / Config.Aimbot.MaxDistance.Value;
 		float num2 = 1f - screenDistance / Config.Aimbot.MaxCursorDistance.Value;
 		Health val = entity.Read<Health>();
@@ -80,41 +81,48 @@ public static class Aimbot
 		float num4 = ((num3 < 0.3f) ? 1f : (1f - num3));
 		return num * Config.Aimbot.DistanceWeight.Value + num2 * Config.Aimbot.CursorDistanceWeight.Value + num4 * Config.Aimbot.HealthWeight.Value + type switch
 		{
-			EntityType.Player => 1f, 
-			EntityType.Boss => 0.5f, 
-			_ => 0.25f, 
+			EntityType.Player => 1f,
+			EntityType.Boss => 0.5f,
+			_ => 0.25f,
 		} * Config.Aimbot.EntityTypeWeight.Value;
 	}
 
 	internal static void UpdateAimData()
 	{
-		//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0017: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0027: Unknown result type (might be due to invalid IL or missing references)
-		//IL_010f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_011e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0123: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0128: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e2: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ed: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ff: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0104: Unknown result type (might be due to invalid IL or missing references)
 		if (Candidates.Count == 0)
 		{
-			_currentTarget = Entity.Null;
-			_hasValidTarget = false;
-			_cachedAimData = Vector2.zero;
+			// Grace period: don't immediately lose the target
+			_targetLostFrames++;
+			if (_targetLostFrames > TargetLostGraceFrames || !IsCurrentTargetValid())
+			{
+				_currentTarget = Entity.Null;
+				_hasValidTarget = false;
+				_cachedAimData = Vector2.zero;
+				_smoothedAimPosition = Vector2.zero;
+			}
+			// During grace period, keep last aim data (don't clear)
 			return;
 		}
-		TargetCandidate currentTarget = Enumerable.FirstOrDefault<TargetCandidate>(Enumerable.Where<TargetCandidate>((System.Collections.Generic.IEnumerable<TargetCandidate>)Candidates, (Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Entity == _currentTarget))) ?? new TargetCandidate();
+
+		_targetLostFrames = 0;
+
+		TargetCandidate currentTarget = Enumerable.FirstOrDefault<TargetCandidate>(
+			Enumerable.Where<TargetCandidate>(
+				(IEnumerable<TargetCandidate>)Candidates,
+				(Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Entity == _currentTarget)
+			)
+		) ?? new TargetCandidate();
+
 		float time = Time.time;
 		if (!IsCurrentTargetValid() || time - _lastTargetSwitchTime > Config.Aimbot.SwitchCooldown.Value)
 		{
-			System.Collections.Generic.IEnumerator<TargetCandidate> enumerator = Enumerable.Where<TargetCandidate>((System.Collections.Generic.IEnumerable<TargetCandidate>)Candidates, (Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Score > currentTarget.Score)).GetEnumerator();
+			IEnumerator<TargetCandidate> enumerator = Enumerable.Where<TargetCandidate>(
+				(IEnumerable<TargetCandidate>)Candidates,
+				(Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Score > currentTarget.Score)
+			).GetEnumerator();
 			try
 			{
-				while (((System.Collections.IEnumerator)enumerator).MoveNext())
+				while (((IEnumerator)enumerator).MoveNext())
 				{
 					TargetCandidate current = enumerator.Current;
 					currentTarget = current;
@@ -122,7 +130,7 @@ public static class Aimbot
 			}
 			finally
 			{
-				((System.IDisposable)enumerator)?.Dispose();
+				((IDisposable)enumerator)?.Dispose();
 			}
 			if (_currentTarget != currentTarget.Entity)
 			{
@@ -130,15 +138,31 @@ public static class Aimbot
 				_lastTargetSwitchTime = time;
 			}
 		}
+
 		_hasValidTarget = _currentTarget.Exists();
-		_cachedAimData = GetPredictedScreenPosition(_currentTarget);
+		Vector2 rawAim = GetPredictedScreenPosition(_currentTarget);
+
+		if (rawAim != Vector2.zero)
+		{
+			// Smooth the aim position using lerp to avoid jitter
+			if (_smoothedAimPosition == Vector2.zero)
+			{
+				_smoothedAimPosition = rawAim;
+			}
+			else
+			{
+				// Adaptive smoothing: faster when far, slower when close
+				float dist = Vector2.Distance(_smoothedAimPosition, rawAim);
+				float smoothFactor = Mathf.Clamp(dist / 200f, 0.15f, 1f);
+				_smoothedAimPosition = Vector2.Lerp(_smoothedAimPosition, rawAim, smoothFactor);
+			}
+			_cachedAimData = _smoothedAimPosition;
+		}
+		// If rawAim is zero (off-screen), keep previous smoothed position during grace period
 	}
 
 	private static bool IsCurrentTargetValid()
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0018: Unknown result type (might be due to invalid IL or missing references)
 		if (_currentTarget.Exists() && !_currentTarget.IsDisabled())
 		{
 			return _currentTarget.IsAlive();
@@ -148,31 +172,6 @@ public static class Aimbot
 
 	private static Vector2 GetPredictedScreenPosition(Entity entity)
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0005: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000c: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0011: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0013: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0018: Unknown result type (might be due to invalid IL or missing references)
-		//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0022: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0023: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0024: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0025: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0046: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0047: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ef: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ff: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e0: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e4: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00e9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ee: Unknown result type (might be due to invalid IL or missing references)
 		Vector3 position = EntityList.LocalPlayer.GetPosition();
 		Vector3 val = entity.GetPosition();
 		Vector3 val2 = (Vector3)entity.Read<Velocity>().Value;
@@ -201,12 +200,27 @@ public static class Aimbot
 
 	public static Vector2 GetAimData()
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
 		return _cachedAimData;
 	}
 
 	public static bool HasValidTarget()
 	{
 		return _hasValidTarget;
+	}
+
+	/// <summary>
+	/// Returns the pixel delta from current cursor to the aim target.
+	/// Dead zone applied: returns zero if already close enough.
+	/// </summary>
+	public static Vector2 GetAimDelta()
+	{
+		if (_cachedAimData == Vector2.zero) return Vector2.zero;
+
+		Vector2 delta = _cachedAimData - CursorPosition;
+
+		// Dead zone: don't micro-correct when already on target
+		if (delta.magnitude < DeadZoneRadius) return Vector2.zero;
+
+		return delta;
 	}
 }

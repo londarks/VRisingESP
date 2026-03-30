@@ -22,6 +22,7 @@ public static class MouseSimulator
         public int Y;
     }
 
+    private const uint MOUSEEVENTF_MOVE = 0x0001;
     private const int MOUSEEVENTF_LEFTDOWN = 0x02;
     private const int MOUSEEVENTF_LEFTUP = 0x04;
 
@@ -37,6 +38,15 @@ public static class MouseSimulator
     public static void SetPos(Vector2 position)
     {
         SetCursorPos((int)position.x, (int)position.y);
+    }
+
+    /// <summary>
+    /// Move the mouse by a relative delta using mouse_event.
+    /// Works with V Rising's camera system which reads mouse delta, not absolute position.
+    /// </summary>
+    public static void MoveDelta(int dx, int dy)
+    {
+        mouse_event(MOUSEEVENTF_MOVE, (uint)dx, (uint)dy, 0, 0);
     }
 
     public static void LeftClick()
