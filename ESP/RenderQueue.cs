@@ -21,9 +21,15 @@ public static class RenderQueue
     {
         public void Draw() => Primitives.DrawBox(GetPosition(drawMode, position), size, color);
     }
-    
+
+    private readonly struct QLine(Vector2 from, Vector2 to, Color color)
+    {
+        public void Draw() => Primitives.DrawLine(from, to, color);
+    }
+
     private static readonly List<QString> StringQueue = [];
     private static readonly List<QBox> BoxQueue = [];
+    private static readonly List<QLine> LineQueue = [];
     private static readonly object Lock = new();
     
     // Strings
@@ -54,13 +60,23 @@ public static class RenderQueue
     {
         Box<Primitives.Normal>(position, size, color);
     }
-    
+
+    // Lines
+    public static void Line(Vector2 from, Vector2 to, Color color)
+    {
+        lock (Lock)
+        {
+            LineQueue.Add(new QLine(from, to, color));
+        }
+    }
+
     public static void Clear()
     {
         lock (Lock)
         {
             StringQueue.Clear();
             BoxQueue.Clear();
+            LineQueue.Clear();
         }
     }
     
@@ -70,6 +86,7 @@ public static class RenderQueue
         {
             foreach (var item in StringQueue) item.Draw();
             foreach (var item in BoxQueue) item.Draw();
+            foreach (var item in LineQueue) item.Draw();
         }
     }
 }

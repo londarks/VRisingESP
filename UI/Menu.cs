@@ -96,6 +96,9 @@ internal class Menu : MonoBehaviour
 		DrawSection("Servos", Config.ESP.Servants);
 		DrawSection("Carruagens", Config.ESP.Carriages);
 		GUILayout.Space(15f);
+		CustomHeader("Rastreio de Sangue");
+		CustomToggle(Config.BloodTracker.Status, "Ativado (linha ate fonte de sangue)");
+		GUILayout.Space(15f);
 		CustomHeader("Extras");
 		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
 		CustomToggle(Config.Extras.AutoLoot, "Loot Automatico");

@@ -336,6 +336,12 @@ internal static class Logic
 						}
 						RenderQueue.String(screenPoint + new Vector2(0f, num2), text3, color, fontSize);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
+
+						// Rastreio: salvar posicao da fonte de sangue
+						if (Config.BloodTracker.Enabled)
+						{
+							BloodTrackerData.Add(position, color);
+						}
 					}
 				}
 			}

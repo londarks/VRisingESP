@@ -171,6 +171,12 @@ internal static class Config
 		internal static readonly FeatureConfig Carriages = new FeatureConfig("ESP", "Carriages", 7, 0f);
 	}
 
+	internal static class BloodTracker
+	{
+		internal static readonly FeatureConfig Status = new FeatureConfig("BloodTracker", "Enabled");
+		internal static bool Enabled => Status.Enabled;
+	}
+
 	internal static class Extras
 	{
 		internal static readonly FeatureConfig AutoFishing = new FeatureConfig("Extras", "AutoFishing");

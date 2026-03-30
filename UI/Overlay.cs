@@ -22,7 +22,13 @@ public class Overlay : MonoBehaviour
 			{
 				RenderQueue.DrawQueued();
 
+				// Rastreio de sangue: desenhar linhas aqui no OnGUI pra acompanhar camera
+				if (Config.BloodTracker.Enabled)
+				{
+					BloodTrackerData.DrawLines();
+				}
 			}
+			BloodTrackerData.Clear();
 			RenderQueue.Clear();
 		}
 	}
