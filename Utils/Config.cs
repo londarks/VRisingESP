@@ -171,9 +171,11 @@ internal static class Config
 		internal static readonly FeatureConfig Carriages = new FeatureConfig("ESP", "Carriages", 7, 0f);
 	}
 
-	internal static class BloodTracker
+	internal static class Radar
 	{
-		internal static readonly FeatureConfig Status = new FeatureConfig("BloodTracker", "Enabled");
+		internal static readonly FeatureConfig Status = new FeatureConfig("Radar", "Enabled");
+		internal static readonly ConfigEntry<float> Size = ConfigFile.Bind<float>("Radar", "Size", 200f, "Tamanho do radar na tela (pixels).");
+		internal static readonly ConfigEntry<float> Range = ConfigFile.Bind<float>("Radar", "Range", 100f, "Alcance do radar (metros).");
 		internal static bool Enabled => Status.Enabled;
 	}
 

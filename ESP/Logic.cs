@@ -50,6 +50,7 @@ internal static class Logic
 	public static void ProcessAllEntities()
 	{
 		Aimbot.Candidates.Clear();
+		Radar.Clear();
 		ProcessPlayers();
 		ProcessVBloodCarriers();
 		ProcessMobs();
@@ -150,6 +151,11 @@ internal static class Logic
 				{
 					bool flag = entity.IsAlly(EntityList.LocalPlayer);
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
+
+					// Radar
+					Color radarColor = flag ? Color.green : Color.red;
+					Radar.AddEntity(position, radarColor, componentData.Name.ToString(), !flag);
+
 					if (Config.Aimbot.Players.Enabled && !flag)
 					{
 						Aimbot.TryAddCandidate(entity, screenPoint, distanceFromPlayer, Aimbot.EntityType.Player);
@@ -227,6 +233,10 @@ internal static class Logic
 			if (CheckEntity(entity) && entity.TryGetComponent<VBloodConsumeSource>(out VBloodConsumeSource componentData))
 			{
 				Vector3 position = entity.GetPosition();
+
+				// Radar - VBlood sempre importante
+				Radar.AddEntity(position, Color.magenta, VBloods.GetName(componentData.Source), true);
+
 				if (GetScreenPoint(position, out var screenPoint))
 				{
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
@@ -311,6 +321,11 @@ internal static class Logic
 			if (CheckEntity(entity) && entity.TryGetComponent<BloodConsumeSource>(out BloodConsumeSource componentData))
 			{
 				Vector3 position = entity.GetPosition();
+
+				// Radar - mobs
+				if (componentData.BloodQuality >= Config.ESP.BloodSources.MinimumQuality)
+					Radar.AddEntity(position, Color.yellow, "Mob", false);
+
 				if (GetScreenPoint(position, out var screenPoint))
 				{
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
@@ -337,11 +352,7 @@ internal static class Logic
 						RenderQueue.String(screenPoint + new Vector2(0f, num2), text3, color, fontSize);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
 
-						// Rastreio: salvar posicao da fonte de sangue
-						if (Config.BloodTracker.Enabled)
-						{
-							BloodTrackerData.Add(position, color);
-						}
+
 					}
 				}
 			}

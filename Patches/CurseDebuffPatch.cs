@@ -13,9 +13,14 @@ public class MiniMapHUDPatch
     {
         if (!Config.Extras.NoFog.Enabled) return;
 
-        var miniMapParent = __instance._MiniMapParent;
-        var curseDebuff = miniMapParent.CurseDebuffVisualization;
-        if (curseDebuff && curseDebuff.enabled) curseDebuff.gameObject.SetActive(false);
+        try
+        {
+            var miniMapParent = __instance._MiniMapParent;
+            if (miniMapParent == null) return;
+            var curseDebuff = miniMapParent.CurseDebuffVisualization;
+            if (curseDebuff != null && curseDebuff.enabled) curseDebuff.gameObject.SetActive(false);
+        }
+        catch { }
     }
 }
 
