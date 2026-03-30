@@ -103,8 +103,8 @@ internal class Menu : MonoBehaviour
 		GUILayout.Space(15f);
 		CustomHeader("Auto-Parry");
 		CustomToggle(Config.AutoParry.Status, "Ativado");
-		CustomSlider("Alcance: {}m", Config.AutoParry.Range, 1f, 15f);
-		CustomSlider("Cooldown: {}s", Config.AutoParry.Cooldown, 0.5f, 5f, "F1");
+		CustomSlider("Alcance: {}m", Config.AutoParry.Range, 1f, 5f);
+		CustomSlider("Cooldown: {}s", Config.AutoParry.Cooldown, 0.1f, 1f, "F2");
 		GUILayout.Space(15f);
 		CustomHeader("Extras");
 		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
