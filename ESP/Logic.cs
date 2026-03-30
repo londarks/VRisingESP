@@ -156,6 +156,12 @@ internal static class Logic
 					Color radarColor = flag ? Color.green : Color.red;
 					Radar.AddEntity(position, radarColor, componentData.Name.ToString(), !flag);
 
+					// Debug
+					EntityDebugger.AnalyzeNearbyEntity(entity, componentData.Name.ToString(), distanceFromPlayer);
+
+					// Auto-Parry (players inimigos)
+					if (!flag) AutoParry.CheckEnemy(entity, distanceFromPlayer);
+
 					if (Config.Aimbot.Players.Enabled && !flag)
 					{
 						Aimbot.TryAddCandidate(entity, screenPoint, distanceFromPlayer, Aimbot.EntityType.Player);
@@ -240,6 +246,10 @@ internal static class Logic
 				if (GetScreenPoint(position, out var screenPoint))
 				{
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
+
+					// Auto-Parry (VBloods)
+					AutoParry.CheckEnemy(entity, distanceFromPlayer);
+
 					if (Config.Aimbot.Bosses.Enabled)
 					{
 						Aimbot.TryAddCandidate(entity, screenPoint, distanceFromPlayer, Aimbot.EntityType.Boss);
@@ -329,6 +339,13 @@ internal static class Logic
 				if (GetScreenPoint(position, out var screenPoint))
 				{
 					float distanceFromPlayer = GetDistanceFromPlayer(position);
+
+					// Debug
+					EntityDebugger.AnalyzeNearbyEntity(entity, entity.GetName(), distanceFromPlayer);
+
+					// Auto-Parry (mobs)
+					AutoParry.CheckEnemy(entity, distanceFromPlayer);
+
 					if (Config.Aimbot.Mobs.Enabled)
 					{
 						Aimbot.TryAddCandidate(entity, screenPoint, distanceFromPlayer, Aimbot.EntityType.Mob);

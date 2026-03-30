@@ -3,6 +3,7 @@ using BepInEx.Core.Logging.Interpolation;
 using BepInEx.Logging;
 using ExtrasensoryPerception.ESP;
 using ExtrasensoryPerception.Utils;
+using Unity.Entities;
 using UnityEngine;
 
 namespace ExtrasensoryPerception.UI;
@@ -40,6 +41,7 @@ public class Overlay : MonoBehaviour
 		}
 		try
 		{
+			EntityDebugger.CheckInput();
 			Logic.ProcessAllEntities();
 		}
 		catch (System.Exception ex)
