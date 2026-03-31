@@ -42,6 +42,7 @@ public class Overlay : MonoBehaviour
 		try
 		{
 			EntityDebugger.CheckInput();
+			SmartAssist.Update();
 			Logic.ProcessAllEntities();
 		}
 		catch (System.Exception ex)

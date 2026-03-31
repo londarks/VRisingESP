@@ -122,6 +122,10 @@ internal class Menu : MonoBehaviour
 			_showParrySettings = !_showParrySettings;
 		GUILayout.EndHorizontal();
 		GUILayout.Space(15f);
+		CustomHeader("Smart Assist");
+		CustomToggle(Config.SmartAssist.Status, "Ativado");
+		CustomToggle(Config.SmartAssist.QuickCast, "Quick-Cast na Troca");
+		GUILayout.Space(15f);
 		CustomHeader("Extras");
 		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
 		CustomToggle(Config.Extras.AutoLoot, "Loot Automatico");

@@ -7,6 +7,7 @@ using ExtrasensoryPerception.Utils;
 using ProjectM;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace ExtrasensoryPerception.ESP;
@@ -79,12 +80,42 @@ public static class Aimbot
 		Health val = entity.Read<Health>();
 		float num3 = val.Value / val.MaxHealth.Value;
 		float num4 = ((num3 < 0.3f) ? 1f : (1f - num3));
-		return num * Config.Aimbot.DistanceWeight.Value + num2 * Config.Aimbot.CursorDistanceWeight.Value + num4 * Config.Aimbot.HealthWeight.Value + type switch
+		float threatBonus = IsAttackingMe(entity) ? 2.0f : 0f;
+		return num * Config.Aimbot.DistanceWeight.Value
+			+ num2 * Config.Aimbot.CursorDistanceWeight.Value
+			+ num4 * Config.Aimbot.HealthWeight.Value
+			+ type switch
+			{
+				EntityType.Player => 1f,
+				EntityType.Boss => 0.5f,
+				_ => 0.25f,
+			} * Config.Aimbot.EntityTypeWeight.Value
+			+ threatBonus;
+	}
+
+	/// <summary>
+	/// Check if an entity is currently attacking us (casting + aimed at local player).
+	/// </summary>
+	private static bool IsAttackingMe(Entity entity)
+	{
+		try
 		{
-			EntityType.Player => 1f,
-			EntityType.Boss => 0.5f,
-			_ => 0.25f,
-		} * Config.Aimbot.EntityTypeWeight.Value;
+			if (!entity.TryGetComponent<AbilityBar_Shared>(out var abilityBar)) return false;
+			if (!abilityBar.SyncedIsCasting) return false;
+			if (!entity.TryGetComponent<TargetDirection>(out var targetDir)) return false;
+
+			var localChar = EntityList.LocalCharacter;
+			if (localChar == Entity.Null || !localChar.Exists()) return false;
+
+			Vector3 enemyPos = entity.GetPosition();
+			Vector3 playerPos = localChar.GetPosition();
+			Vector3 aimDir = new Vector3(targetDir.AimDirection.x, 0, targetDir.AimDirection.z).normalized;
+			Vector3 toPlayer = (playerPos - enemyPos).normalized;
+
+			// dot > 0.6 = aiming roughly at us
+			return Vector3.Dot(aimDir, toPlayer) > 0.6f;
+		}
+		catch { return false; }
 	}
 
 	internal static void UpdateAimData()

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ExtrasensoryPerception.API;
+using ExtrasensoryPerception.Utils;
 using ProjectM;
 using Stunlock.Core;
 using Unity.Collections;
@@ -42,7 +43,16 @@ public static class EntityDebugger
         {
             _enabled = !_enabled;
             _previousStates.Clear();
-            Plugin.Logger.LogInfo($"[Debug] {(_enabled ? "ATIVADO - monitorando mobs perto continuamente. F8 pra desligar." : "DESATIVADO")}");
+            if (_enabled)
+            {
+                FileLogger.Start();
+                Plugin.Logger.LogInfo($"[Debug] ATIVADO - salvando em {FileLogger.FilePath}. F8 pra desligar.");
+            }
+            else
+            {
+                FileLogger.Stop();
+                Plugin.Logger.LogInfo("[Debug] DESATIVADO - log salvo.");
+            }
         }
 
         // F9 = analisar MEU personagem (spells, cooldowns, buffs)
@@ -364,7 +374,9 @@ public static class EntityDebugger
                 if (entity.TryGetComponent<Health>(out var health))
                     hp = health.Value;
 
-                Plugin.Logger.LogInfo($"[Debug] [{entityName}] dist={distance:F1}m HP={hp:F0} Casting={isCasting} GCD={globalCd:F2}{changes}");
+                string logLine = $"[Debug] [{entityName}] dist={distance:F1}m HP={hp:F0} Casting={isCasting} GCD={globalCd:F2}{changes}";
+                Plugin.Logger.LogInfo(logLine);
+                FileLogger.Log(logLine);
             }
 
             // Salvar estado

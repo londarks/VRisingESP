@@ -31,17 +31,25 @@ public class AimController : MonoBehaviour
 		}
 		Aimbot.CursorPosition = MouseSimulator.CursorPosition;
 		Aimbot.UpdateAimData();
-		if (Config.Aimbot.Mode.Value == 1)
+
+		// SmartAssist controls aimbot activation when enabled
+		// (activates during aimed casts, deactivates when cast ends)
+		// Manual hotkey still works as fallback/override
+		if (!Config.SmartAssist.Enabled)
 		{
-			if (Input.GetKeyDown(Config.Aimbot.Key.Value))
+			if (Config.Aimbot.Mode.Value == 1)
 			{
-				Aimbot.Active = !Aimbot.Active;
+				if (Input.GetKeyDown(Config.Aimbot.Key.Value))
+				{
+					Aimbot.Active = !Aimbot.Active;
+				}
+			}
+			else
+			{
+				Aimbot.Active = Input.GetKey(Config.Aimbot.Key.Value);
 			}
 		}
-		else
-		{
-			Aimbot.Active = Input.GetKey(Config.Aimbot.Key.Value);
-		}
+		// When SmartAssist is on, Aimbot.Active is managed by SmartAssist.CheckAimOnCast()
 	}
 
 	private void LateUpdate()
