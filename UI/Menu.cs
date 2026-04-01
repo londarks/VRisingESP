@@ -199,6 +199,7 @@ internal class Menu : MonoBehaviour
                 Toggle(Config.Aimbot.Mobs,    "Mobs");
             });
             SwitchRow("Mostrar Mira", Config.Aimbot.DrawAimPosition);
+            SwitchRow("Somente Lock (Shift+Click)", Config.Aimbot.LockOnly);
 
             GUILayout.Space(6f);
             SubHeader("LIMITES");

@@ -5,81 +5,88 @@ namespace ExtrasensoryPerception.ESP;
 
 public class AimController : MonoBehaviour
 {
-	// Smoothing factor for mouse movement (0-1). Lower = smoother but slower.
 	private const float AimSmoothing = 0.45f;
-
-	// Max pixels to move per frame to avoid huge jumps
 	private const float MaxDeltaPerFrame = 80f;
+
+	private static readonly Color LockColor = new Color(0.95f, 0.25f, 0.25f, 0.85f);
 
 	private void OnGUI()
 	{
-		if ((int)Event.current.type == 7 && Config.Aimbot.Enabled && Aimbot.HasValidTarget())
+		if ((int)Event.current.type != 7 || !Config.Aimbot.Enabled) return;
+
+		if (Aimbot.HasLockedTarget)
 		{
-			Vector2 aimData = Aimbot.GetAimData();
-			if (aimData != Vector2.zero && Config.Aimbot.DrawAimPosition.Enabled)
-			{
-				Primitives.DrawX(aimData, 5f, Color.white);
-			}
+			Vector2 aim = Aimbot.GetAimData();
+			if (aim != Vector2.zero)
+				DrawLockReticle(aim);
+		}
+
+		if (Aimbot.HasValidTarget() && Config.Aimbot.DrawAimPosition.Enabled)
+		{
+			Vector2 aim = Aimbot.GetAimData();
+			if (aim != Vector2.zero)
+				Primitives.DrawX(aim, 4f, Aimbot.HasLockedTarget ? LockColor : Color.white);
 		}
 	}
 
 	private void Update()
 	{
-		if (!Config.Aimbot.Enabled)
-		{
-			return;
-		}
+		if (!Config.Aimbot.Enabled) return;
+
 		Aimbot.CursorPosition = MouseSimulator.CursorPosition;
 		Aimbot.UpdateAimData();
 
-		// SmartAssist controls aimbot activation when enabled
-		// (activates during aimed casts, deactivates when cast ends)
-		// Manual hotkey still works as fallback/override
+		// Shift + Left Click to lock/unlock target
+		if (Input.GetKey(KeyCode.LeftShift) && Input.GetMouseButtonDown(0))
+			Aimbot.TryLockTarget();
+
 		if (!Config.SmartAssist.Enabled)
 		{
 			if (Config.Aimbot.Mode.Value == 1)
 			{
 				if (Input.GetKeyDown(Config.Aimbot.Key.Value))
-				{
 					Aimbot.Active = !Aimbot.Active;
-				}
 			}
 			else
 			{
 				Aimbot.Active = Input.GetKey(Config.Aimbot.Key.Value);
 			}
 		}
-		// When SmartAssist is on, Aimbot.Active is managed by SmartAssist.CheckAimOnCast()
 	}
 
 	private void LateUpdate()
 	{
 		if (!Application.isFocused || !Config.Aimbot.Enabled || !Aimbot.Active || !Aimbot.HasValidTarget())
 			return;
-
-		// Skip if in-game menu is open
 		if (Plugin.IsMenuOpen) return;
 
 		Vector2 delta = Aimbot.GetAimDelta();
 		if (delta == Vector2.zero) return;
 
-		// Apply smoothing: only move a fraction of the delta per frame
 		Vector2 smoothed = delta * AimSmoothing;
-
-		// Clamp to max speed to prevent camera jerking on large jumps
 		if (smoothed.magnitude > MaxDeltaPerFrame)
-		{
 			smoothed = smoothed.normalized * MaxDeltaPerFrame;
-		}
 
-		// Use relative mouse movement — this works WITH V Rising's camera system
-		// instead of fighting it with SetCursorPos
 		int dx = Mathf.RoundToInt(smoothed.x);
 		int dy = Mathf.RoundToInt(smoothed.y);
-
 		if (dx != 0 || dy != 0)
-		{
 			MouseSimulator.MoveDelta(dx, dy);
-		}
+	}
+
+	/// <summary>
+	/// Minimal lock reticle: small crosshair ticks around the aim point.
+	/// </summary>
+	private static void DrawLockReticle(Vector2 p)
+	{
+		float g = 4f;   // gap from center
+		float l = 6f;   // tick length
+
+		// Horizontal ticks
+		Primitives.DrawLine(new Vector2(p.x - g - l, p.y), new Vector2(p.x - g, p.y), LockColor);
+		Primitives.DrawLine(new Vector2(p.x + g, p.y), new Vector2(p.x + g + l, p.y), LockColor);
+
+		// Vertical ticks
+		Primitives.DrawLine(new Vector2(p.x, p.y - g - l), new Vector2(p.x, p.y - g), LockColor);
+		Primitives.DrawLine(new Vector2(p.x, p.y + g), new Vector2(p.x, p.y + g + l), LockColor);
 	}
 }

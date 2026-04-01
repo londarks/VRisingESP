@@ -55,7 +55,75 @@ public static class Aimbot
 	// Dead zone: don't move mouse if already within this pixel radius of the target
 	private const float DeadZoneRadius = 3f;
 
+	// ── Lock Target System ─────────────────────────────────────────
+	private static Entity _lockedTarget = Entity.Null;
+	internal static bool HasLockedTarget => _lockedTarget != Entity.Null && _lockedTarget.Exists();
+	private static float _lockLostTime;
+	private const float LockGraceSeconds = 1.5f;
+
 	internal static readonly List<TargetCandidate> Candidates = new List<TargetCandidate>();
+
+	/// <summary>
+	/// Shift+Click: lock the best candidate near cursor, or unlock if already locked.
+	/// </summary>
+	internal static void TryLockTarget()
+	{
+		if (HasLockedTarget)
+		{
+			UnlockTarget();
+			return;
+		}
+
+		if (Candidates.Count == 0) return;
+
+		TargetCandidate best = null;
+		float bestScore = float.MinValue;
+		foreach (var c in Candidates)
+		{
+			if (c.Score > bestScore)
+			{
+				bestScore = c.Score;
+				best = c;
+			}
+		}
+
+		if (best != null)
+		{
+			_lockedTarget = best.Entity;
+			_currentTarget = best.Entity;
+			_lastTargetSwitchTime = Time.time;
+			_lockLostTime = 0f;
+			_targetLostFrames = 0;
+		}
+	}
+
+	internal static void UnlockTarget()
+	{
+		_lockedTarget = Entity.Null;
+		_lockLostTime = 0f;
+	}
+
+	private static bool IsLockedTargetStillValid()
+	{
+		if (!_lockedTarget.Exists() || _lockedTarget.IsDisabled() || !_lockedTarget.IsAlive())
+			return false;
+
+		Vector3 pos = _lockedTarget.GetPosition();
+		Vector3 playerPos = EntityList.LocalPlayer.GetPosition();
+		float dist = Vector3.Distance(playerPos, pos);
+
+		bool onScreen = Logic.GetScreenPoint(pos, out _);
+		bool inRange = dist <= Config.Aimbot.MaxDistance.Value * 1.5f;
+
+		if (!onScreen || !inRange)
+		{
+			if (_lockLostTime == 0f) _lockLostTime = Time.time;
+			return Time.time - _lockLostTime < LockGraceSeconds;
+		}
+
+		_lockLostTime = 0f;
+		return true;
+	}
 
 	internal static void TryAddCandidate(Entity entity, Vector2 screenPoint, float distance, EntityType type)
 	{
@@ -121,9 +189,40 @@ public static class Aimbot
 
 	internal static void UpdateAimData()
 	{
+		// ── Locked target takes priority ──
+		if (HasLockedTarget)
+		{
+			if (!IsLockedTargetStillValid())
+			{
+				UnlockTarget();
+				// Fall through to normal logic
+			}
+			else
+			{
+				_currentTarget = _lockedTarget;
+				_hasValidTarget = true;
+				_targetLostFrames = 0;
+
+				Vector2 lockAim = GetPredictedScreenPosition(_currentTarget);
+				if (lockAim != Vector2.zero)
+					ApplySmoothing(lockAim);
+				return;
+			}
+		}
+
+		// ── Lock-only mode: no auto-select without lock ──
+		if (Config.Aimbot.LockOnly.Enabled)
+		{
+			_currentTarget = Entity.Null;
+			_hasValidTarget = false;
+			_cachedAimData = Vector2.zero;
+			_smoothedAimPosition = Vector2.zero;
+			return;
+		}
+
+		// ── Normal auto-select logic ──
 		if (Candidates.Count == 0)
 		{
-			// Grace period: don't immediately lose the target
 			_targetLostFrames++;
 			if (_targetLostFrames > TargetLostGraceFrames || !IsCurrentTargetValid())
 			{
@@ -132,7 +231,6 @@ public static class Aimbot
 				_cachedAimData = Vector2.zero;
 				_smoothedAimPosition = Vector2.zero;
 			}
-			// During grace period, keep last aim data (don't clear)
 			return;
 		}
 
@@ -173,24 +271,23 @@ public static class Aimbot
 
 		_hasValidTarget = _currentTarget.Exists();
 		Vector2 rawAim = GetPredictedScreenPosition(_currentTarget);
-
 		if (rawAim != Vector2.zero)
+			ApplySmoothing(rawAim);
+	}
+
+	private static void ApplySmoothing(Vector2 rawAim)
+	{
+		if (_smoothedAimPosition == Vector2.zero)
 		{
-			// Smooth the aim position using lerp to avoid jitter
-			if (_smoothedAimPosition == Vector2.zero)
-			{
-				_smoothedAimPosition = rawAim;
-			}
-			else
-			{
-				// Adaptive smoothing: faster when far, slower when close
-				float dist = Vector2.Distance(_smoothedAimPosition, rawAim);
-				float smoothFactor = Mathf.Clamp(dist / 200f, 0.15f, 1f);
-				_smoothedAimPosition = Vector2.Lerp(_smoothedAimPosition, rawAim, smoothFactor);
-			}
-			_cachedAimData = _smoothedAimPosition;
+			_smoothedAimPosition = rawAim;
 		}
-		// If rawAim is zero (off-screen), keep previous smoothed position during grace period
+		else
+		{
+			float dist = Vector2.Distance(_smoothedAimPosition, rawAim);
+			float smoothFactor = Mathf.Clamp(dist / 200f, 0.15f, 1f);
+			_smoothedAimPosition = Vector2.Lerp(_smoothedAimPosition, rawAim, smoothFactor);
+		}
+		_cachedAimData = _smoothedAimPosition;
 	}
 
 	private static bool IsCurrentTargetValid()

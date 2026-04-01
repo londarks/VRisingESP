@@ -119,6 +119,8 @@ internal static class Config
 
 		internal static readonly FeatureConfig DrawAimPosition = new FeatureConfig("Aimbot", "DrawAimPosition");
 
+		internal static readonly FeatureConfig LockOnly = new FeatureConfig("Aimbot", "LockOnly");
+
 		internal static readonly ConfigEntry<int> Mode = ConfigFile.Bind<int>("Aimbot", "Mode", 0, "Aimbot mode (Hold/Toggle).");
 
 		internal static readonly ConfigEntry<KeyCode> Key = ConfigFile.Bind<KeyCode>("Aimbot", "Key", KeyCode.LeftShift, "Aimbot triggering key (modo manual).");
