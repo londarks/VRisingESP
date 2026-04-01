@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using ExtrasensoryPerception.API;
 using ExtrasensoryPerception.Utils;
@@ -145,6 +146,7 @@ public static class AutoParry
                 // Generous threshold for melee: includes lunge distance
                 if (distToAimLine > playerRadius + mobRadius + 2.0f) return;
 
+                LogLocalPlayerState($"melee:{spellName}");
                 _lastParryTime = now;
                 new Thread(() => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value)).Start();
             }
@@ -167,6 +169,7 @@ public static class AutoParry
 
             if (distToAimLine > playerRadius + mobRadius + 1.0f) return;
 
+            LogLocalPlayerState($"ranged:{spellName}");
             _lastParryTime = now;
             new Thread(() => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value)).Start();
         }
@@ -262,5 +265,66 @@ public static class AutoParry
             if (spellName.StartsWith(prefix, StringComparison.Ordinal)) return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Log local player state when parry fires: casting, current spell, all slot cooldowns.
+    /// This helps us discover how to read parry CD.
+    /// </summary>
+    private static void LogLocalPlayerState(string trigger)
+    {
+        try
+        {
+            var localChar = EntityList.LocalCharacter;
+            if (localChar == Entity.Null || !localChar.Exists()) return;
+
+            var sb = new StringBuilder();
+            sb.Append($"[AutoParry] FIRED ({trigger}) | ");
+
+            if (localChar.TryGetComponent<AbilityBar_Shared>(out var bar))
+            {
+                string castName = "";
+                if (bar.CastAbilityPrefabGuid != PrefabGUID.Empty)
+                    castName = VWorld.PrefabLookupMap.GetName(bar.CastAbilityPrefabGuid);
+                sb.Append($"Casting={bar.SyncedIsCasting} Spell={castName} GCD={bar.GlobalCooldown:F2} | ");
+            }
+
+            if (VWorld.EntityManager.HasBuffer<AbilityGroupSlotBuffer>(localChar))
+            {
+                var slots = VWorld.EntityManager.GetBuffer<AbilityGroupSlotBuffer>(localChar);
+                var map = VWorld.PrefabLookupMap;
+                double serverTime = VWorld.Game.Time.ElapsedTime;
+
+                sb.Append("SLOTS: ");
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    var slot = slots[i];
+                    string name = map.GetName(slot.BaseAbilityGroupOnSlot);
+                    var slotEntity = slot.GroupSlotEntity._Entity;
+
+                    float cdRemaining = 0f;
+                    if (slotEntity != Entity.Null && slotEntity.Exists())
+                    {
+                        if (slotEntity.TryGetComponent<AbilityGroupSlot>(out var gs))
+                        {
+                            var stateEntity = gs.StateEntity._Entity;
+                            if (stateEntity != Entity.Null && stateEntity.Exists())
+                            {
+                                if (stateEntity.TryGetComponent<AbilityCooldownState>(out var cd))
+                                    cdRemaining = (float)Math.Max(0, cd.CooldownEndTime - serverTime);
+                            }
+                        }
+                    }
+
+                    sb.Append($"[{i}]{name}={cdRemaining:F1}s ");
+                }
+            }
+
+            FileLogger.Log(sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            FileLogger.Log($"[AutoParry] LogState error: {ex.Message}");
+        }
     }
 }

@@ -9,306 +9,452 @@ namespace ExtrasensoryPerception.UI;
 
 internal class Menu : MonoBehaviour
 {
-	private static Rect _windowRect = new Rect(20f, 20f, 300f, 900f);
+    private enum Tab { ESP, Combat, Radar, Extras }
 
-	private Rect _aimbotSettingsRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y, 300f, 500f);
+    private static Rect _windowRect = new Rect(80f, 50f, 620f, 0f);
+    private bool _showMenu;
+    private Tab _currentTab = Tab.ESP;
 
-	private bool _showMenu;
+    private bool _aimbotOpen = true;
+    private bool _parryOpen  = true;
+    private bool _assistOpen = true;
 
-	private bool _showAimbotSettings;
-	private bool _showParrySettings;
-	private bool _showRadarSettings;
+    private readonly string[] _boxTypes    = { "Cheias", "Cantos" };
+    private readonly string[] _aimbotModes = { "Segurar", "Alternar" };
 
-	private readonly string[] _boxTypes = new string[2] { "Caixas Cheias", "Apenas Cantos" };
+    private static readonly string[] TabLabels = { "ESP", "Combate", "Radar", "Extras" };
+    private static readonly string[] TabDescs =
+    {
+        "Controle a visibilidade de entidades e overlays.",
+        "Configure aimbot, auto-parry e smart assist.",
+        "Mini-mapa radar com alcance customizavel.",
+        "Auto-fish, auto-loot, fog e camera."
+    };
 
-	private readonly string[] _aimbotTypes = new string[2] { "Segurar", "Alternar" };
+    // ── Lifecycle ──────────────────────────────────────────────────
 
-	private void OnGUI()
-	{
-		//IL_000f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0034: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0044: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0064: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0069: Unknown result type (might be due to invalid IL or missing references)
-		if (_showMenu)
-		{
-			MenuTheme.SetupDarkTheme();
-			_windowRect = GUI.Window(1, _windowRect, (GUI.WindowFunction)DrawWindow, "vMenu", MenuTheme.WindowStyle);
-			if (_showAimbotSettings)
-			{
-				_aimbotSettingsRect = GUI.Window(2, _aimbotSettingsRect, (GUI.WindowFunction)AimSettingsWindow, "Config. Mira Automatica", MenuTheme.WindowStyle);
-			}
-			if (_showParrySettings)
-			{
-				var parryRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y + 200f, 280f, 300f);
-				GUI.Window(3, parryRect, (GUI.WindowFunction)ParrySettingsWindow, "Config. Auto-Parry", MenuTheme.WindowStyle);
-			}
-			if (_showRadarSettings)
-			{
-				var radarRect = new Rect(_windowRect.x + _windowRect.width + 5f, _windowRect.y + 100f, 280f, 200f);
-				GUI.Window(4, radarRect, (GUI.WindowFunction)RadarSettingsWindow, "Config. Radar", MenuTheme.WindowStyle);
-			}
-		}
-	}
+    private void OnGUI()
+    {
+        if (!_showMenu) return;
+        MenuTheme.Init();
+        _windowRect = GUILayout.Window(1, _windowRect, (GUI.WindowFunction)DrawWindow, "", MenuTheme.WindowStyle);
+    }
 
-	private void Update()
-	{
-		if (Input.GetKeyDown((KeyCode)277))
-		{
-			_showMenu = !_showMenu;
-		}
-	}
+    private void Update()
+    {
+        if (Input.GetKeyDown((KeyCode)277))
+            _showMenu = !_showMenu;
+    }
 
-	private void DrawWindow(int windowID)
-	{
-		//IL_00b1: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00bb: Expected O, but got Unknown
-		//IL_027a: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004d: Unknown result type (might be due to invalid IL or missing references)
-		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("Geral");
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ModToggle, "Ativado");
-		if (CustomButton("Resetar Camera", GUILayout.Width(135f)))
-		{
-			Logic.MainCamera = Camera.main ?? throw new InvalidOperationException();
-		}
-		GUILayout.EndHorizontal();
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ESP.Boxes, "Desenhar Caixas");
-		CustomButton(_boxTypes[Config.ESP.Boxes.Option], Config.ESP.Boxes, _boxTypes.Length);
-		GUILayout.EndHorizontal();
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.ESP.Outlines, new GUIContent("Desenhar Contornos", (Texture)null, "Aviso: Pode causar queda de FPS."));
-		CustomButton("Qualidade: {}", Config.ESP.Outlines, 4);
-		GUILayout.EndHorizontal();
-		GUILayout.Space(15f);
-		CustomHeader("Mira Automatica");
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.Aimbot.Status, "Ativado");
-		CustomButton(_aimbotTypes[Config.Aimbot.Mode.Value], Config.Aimbot.Mode, _aimbotTypes.Length);
-		GUILayout.EndHorizontal();
-		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
-		{
-			_showAimbotSettings = !_showAimbotSettings;
-		}
-		GUILayout.Space(15f);
-		CustomHeader("ESP");
-		DrawSection("Jogadores", Config.ESP.Players);
-		DrawSection("VBlood Carriers", Config.ESP.VBloodCarriers);
-		DrawSection("Fontes de Sangue", Config.ESP.BloodSources);
-		DrawSection("Bosses de Portao", Config.ESP.GateBosses);
-		DrawSection("Itens", Config.ESP.Items);
-		DrawSection("Containers", Config.ESP.Containers);
-		DrawSection("Minerios", Config.ESP.Ores);
-		DrawSection("Plantas", Config.ESP.Plants);
-		DrawSection("Pontos de Pesca", Config.ESP.FishingSpots);
-		DrawSection("Cavalos", Config.ESP.Horses);
-		DrawSection("Servos", Config.ESP.Servants);
-		DrawSection("Carruagens", Config.ESP.Carriages);
-		GUILayout.Space(15f);
-		CustomHeader("Radar");
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.Radar.Status, "Ativado");
-		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
-			_showRadarSettings = !_showRadarSettings;
-		GUILayout.EndHorizontal();
-		GUILayout.Space(15f);
-		CustomHeader("Auto-Parry");
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.AutoParry.Status, "Ativado");
-		if (CustomButton("Configuracoes", GUILayout.ExpandWidth(true)))
-			_showParrySettings = !_showParrySettings;
-		GUILayout.EndHorizontal();
-		GUILayout.Space(15f);
-		CustomHeader("Smart Assist");
-		CustomToggle(Config.SmartAssist.Status, "Ativado");
-		CustomToggle(Config.SmartAssist.QuickCast, "Quick-Cast na Troca");
-		GUILayout.Space(15f);
-		CustomHeader("Extras");
-		CustomToggle(Config.Extras.AutoFishing, "Pesca Automatica");
-		CustomToggle(Config.Extras.AutoLoot, "Loot Automatico");
-		CustomToggle(Config.Extras.NoFog, "Sem Nevoa");
-		GUILayout.EndVertical();
-		ShowTooltip();
-		GUI.DragWindow(new Rect(0f, 0f, _windowRect.width, 20f));
-	}
+    // ── Main Window ────────────────────────────────────────────────
 
-	private void AimSettingsWindow(int windowID)
-	{
-		//IL_01ab: Unknown result type (might be due to invalid IL or missing references)
-		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("Geral");
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(Config.Aimbot.Players, "Jogadores");
-		CustomToggle(Config.Aimbot.Bosses, "Bosses");
-		GUILayout.EndHorizontal();
-		CustomToggle(Config.Aimbot.Mobs, "Mobs");
-		GUILayout.Space(20f);
-		CustomToggle(Config.Aimbot.DrawAimPosition, "Mostrar Posicao da Mira");
-		GUILayout.Space(15f);
-		CustomHeader("Limites");
-		CustomSlider("Distancia: {}m", Config.Aimbot.MaxDistance, 1f, 50f);
-		CustomSlider("Dist. do Cursor: {}", Config.Aimbot.MaxCursorDistance, 0f, 1000f);
-		CustomSlider("CD Troca de Alvo: {}s", Config.Aimbot.SwitchCooldown, 0f, 1f, "F1");
-		GUILayout.Space(15f);
-		CustomHeader("Pesos");
-		CustomSlider("Distancia: {}", Config.Aimbot.DistanceWeight, 0f, 1f, "F2");
-		CustomSlider("Dist. Cursor: {}", Config.Aimbot.CursorDistanceWeight, 0f, 1f, "F2");
-		CustomSlider("Vida: {}", Config.Aimbot.HealthWeight, 0f, 1f, "F2");
-		CustomSlider("Tipo: {}", Config.Aimbot.EntityTypeWeight, 0f, 1f, "F2");
-		GUILayout.Space(10f);
-		GUILayout.FlexibleSpace();
-		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
-		{
-			_showAimbotSettings = false;
-		}
-		GUILayout.EndVertical();
-		GUI.DragWindow(new Rect(0f, 0f, _aimbotSettingsRect.width, 20f));
-	}
+    private void DrawWindow(int id)
+    {
+        GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
 
-	private void ParrySettingsWindow(int windowID)
-	{
-		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("Alvos");
-		CustomToggle(Config.AutoParry.Players, "Jogadores");
-		CustomToggle(Config.AutoParry.Bosses, "Bosses");
-		CustomToggle(Config.AutoParry.Mobs, "Mobs");
-		GUILayout.Space(15f);
-		CustomHeader("Ajustes");
-		CustomSlider("Alcance Melee: {}m", Config.AutoParry.Range, 1f, 5f);
-		CustomSlider("Cooldown: {}s", Config.AutoParry.Cooldown, 0.05f, 1f, "F2");
-		GUILayout.Space(10f);
-		GUILayout.FlexibleSpace();
-		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
-			_showParrySettings = false;
-		GUILayout.EndVertical();
-	}
+        // ── Sidebar + Content ──
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
 
-	private void RadarSettingsWindow(int windowID)
-	{
-		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomHeader("Ajustes");
-		CustomSlider("Tamanho: {}", Config.Radar.Size, 100f, 400f);
-		CustomSlider("Alcance: {}m", Config.Radar.Range, 30f, 200f);
-		GUILayout.Space(10f);
-		GUILayout.FlexibleSpace();
-		if (GUILayout.Button("Fechar", (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.ExpandWidth(true) }))
-			_showRadarSettings = false;
-		GUILayout.EndVertical();
-	}
+        // ════ SIDEBAR ════
+        GUILayout.BeginVertical(MenuTheme.SidebarBgStyle,
+            new GUILayoutOption[] { GUILayout.Width(140f), GUILayout.ExpandHeight(true) });
 
-	private static bool CustomButton(string label, params GUILayoutOption[] options)
-	{
-		return GUILayout.Button(label, MenuTheme.ButtonStyle, options);
-	}
+        // Brand
+        GUILayout.Label("B A B E L", MenuTheme.TitleStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
+        HLine();
+        GUILayout.Space(4f);
 
-	private static void CustomButton(string label, ConfigEntry<int> config, int maxValue, int addValue = 0)
-	{
-		if (GUILayout.Button(label.Replace("{}", config.Value.ToString()), MenuTheme.ButtonStyle, (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.Width(135f) }))
-		{
-			config.Value = (config.Value - addValue + 1) % maxValue + addValue;
-		}
-	}
+        // Nav
+        NavBtn("ESP",      Tab.ESP);
+        NavBtn("Combate",  Tab.Combat);
+        NavBtn("Radar",    Tab.Radar);
+        NavBtn("Extras",   Tab.Extras);
 
-	private static void CustomButton(string label, Config.FeatureConfig config, int maxValue, int addValue = 0)
-	{
-		if (GUILayout.Button(label.Replace("{}", config.Option.ToString()), MenuTheme.ButtonStyle, (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.Width(135f) }))
-		{
-			config.Option = (config.Option - addValue + 1) % maxValue + addValue;
-		}
-	}
+        // Spacer to push credit down
+        GUILayout.Label("", new GUILayoutOption[] { GUILayout.ExpandHeight(true) });
 
-	private static void CustomHeader(string label)
-	{
-		GUILayout.Label(label, MenuTheme.BoxStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
-	}
+        // Master toggle at bottom of sidebar
+        GUILayout.Space(4f);
+        HLine();
+        GUILayout.Space(4f);
+        Row(() =>
+        {
+            GUILayout.Label("Ativo", MenuTheme.LabelStyle,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+            MasterSwitch();
+        });
+        GUILayout.Space(6f);
+        GUILayout.Label("babel \u00b7 londarks", MenuTheme.CreditStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Space(6f);
 
-	private static float CustomSlider(string label, float value, float min, float max, string format = "F0")
-	{
-		//IL_001c: Unknown result type (might be due to invalid IL or missing references)
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		GUIStyle label2 = GUI.skin.label;
-		label2.contentOffset = new Vector2(0f, -4f);
-		GUILayout.Label(label.Replace("{}", value.ToString(format)), label2, (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.Width(135f) });
-		GUILayout.Space(6f);
-		GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
-		GUILayout.Space(4f);
-		value = GUILayout.HorizontalSlider(value, min, max, MenuTheme.HSliderStyle, MenuTheme.HSliderThumbStyle, System.Array.Empty<GUILayoutOption>());
-		GUILayout.EndVertical();
-		GUILayout.EndHorizontal();
-		return value;
-	}
+        GUILayout.EndVertical();
 
-	private static void CustomSlider(string label, Config.FeatureConfig config, float min, float max, string format = "F0")
-	{
-		config.MinimumQuality = CustomSlider(label, config.MinimumQuality, min, max, format);
-	}
+        // ════ CONTENT ════
+        GUILayout.BeginVertical(MenuTheme.ContentBgStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
 
-	private static void CustomSlider(string label, ConfigEntry<float> config, float min, float max, string format = "F0")
-	{
-		config.Value = CustomSlider(label, config.Value, min, max, format);
-	}
+        // Page title + description
+        GUILayout.Label(TabLabels[(int)_currentTab], MenuTheme.PageTitleStyle,
+            (Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Label(TabDescs[(int)_currentTab], MenuTheme.PageDescStyle,
+            (Il2CppReferenceArray<GUILayoutOption>)null);
+        HLine();
+        GUILayout.Space(4f);
 
-	private static void CustomToggle(Config.FeatureConfig config, string text)
-	{
-		//IL_0002: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000c: Expected O, but got Unknown
-		CustomToggle(config, new GUIContent(text));
-	}
+        switch (_currentTab)
+        {
+            case Tab.ESP:    DrawESPTab();    break;
+            case Tab.Combat: DrawCombatTab(); break;
+            case Tab.Radar:  DrawRadarTab();  break;
+            case Tab.Extras: DrawExtrasTab(); break;
+        }
 
-	private static void CustomToggle(Config.FeatureConfig config, GUIContent content)
-	{
-		config.Enabled = GUILayout.Toggle(config.Enabled, content, MenuTheme.ToggleStyle, System.Array.Empty<GUILayoutOption>());
-	}
+        GUILayout.Space(6f);
+        GUILayout.EndVertical();
 
-	private static void CustomToggle(ConfigEntry<bool> entry, string text)
-	{
-		//IL_0002: Unknown result type (might be due to invalid IL or missing references)
-		//IL_000c: Expected O, but got Unknown
-		CustomToggle(entry, new GUIContent(text));
-	}
+        GUILayout.EndHorizontal();
+        GUILayout.EndVertical();
 
-	private static void CustomToggle(ConfigEntry<bool> entry, GUIContent content)
-	{
-		entry.Value = GUILayout.Toggle(entry.Value, content, MenuTheme.ToggleStyle, System.Array.Empty<GUILayoutOption>());
-	}
+        ShowTooltip();
+        GUI.DragWindow(new Rect(0f, 0f, _windowRect.width, 50f));
+    }
 
-	private static void DrawSection(string sectionName, Config.FeatureConfig config)
-	{
-		GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
-		CustomToggle(config, sectionName);
-		if (CustomButton(ColorOptions.GetColorName(config.Color)))
-		{
-			config.Color = (config.Color + 1) % ColorOptions.AllColors.Count;
-		}
-		GUILayout.EndHorizontal();
-		if (config.MinimumQuality != 0f)
-		{
-			CustomSlider("Min. Quality: {}%", config, 1f, 100f);
-		}
-	}
+    // ── Master Switch ──────────────────────────────────────────────
 
-	private void ShowTooltip()
-	{
-		//IL_0012: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0017: Unknown result type (might be due to invalid IL or missing references)
-		//IL_001d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0023: Expected O, but got Unknown
-		//IL_0029: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_002f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_003b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0047: Unknown result type (might be due to invalid IL or missing references)
-		//IL_004d: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0053: Unknown result type (might be due to invalid IL or missing references)
-		if (!string.IsNullOrEmpty(GUI.tooltip))
-		{
-			Vector2 mousePosition = Event.current.mousePosition;
-			GUIContent val = new GUIContent(GUI.tooltip);
-			Vector2 val2 = MenuTheme.TooltipStyle.CalcSize(val);
-			GUI.Label(new Rect(mousePosition.x + 35f, mousePosition.y - 1f, val2.x, val2.y), val, MenuTheme.TooltipStyle);
-		}
-	}
+    private static void MasterSwitch()
+    {
+        var style = Config.ModToggle.Value ? MenuTheme.SwitchOnStyle : MenuTheme.SwitchOffStyle;
+        if (GUILayout.Button(Config.ModToggle.Value ? "ON" : "OFF", style,
+                new GUILayoutOption[] { GUILayout.Width(44f), GUILayout.Height(24f) }))
+            Config.ModToggle.Value = !Config.ModToggle.Value;
+    }
+
+    // ── Sidebar Navigation ─────────────────────────────────────────
+
+    private void NavBtn(string label, Tab tab)
+    {
+        var style = tab == _currentTab ? MenuTheme.NavActiveStyle : MenuTheme.NavStyle;
+        if (GUILayout.Button(label, style,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(36f) }))
+            _currentTab = tab;
+    }
+
+    // ── ESP Tab ────────────────────────────────────────────────────
+
+    private void DrawESPTab()
+    {
+        Header("Exibicao");
+        GUILayout.Space(4f);
+        Row(() =>
+        {
+            SwitchRow("Caixas", Config.ESP.Boxes);
+            OptionBtn(_boxTypes[Config.ESP.Boxes.Option], Config.ESP.Boxes, _boxTypes.Length);
+        });
+        Row(() =>
+        {
+            GUILayout.Label(new GUIContent("Contornos", (Texture)null, "Pode causar queda de FPS"),
+                MenuTheme.LabelStyle, new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+            OptionBtn("Qual: {}", Config.ESP.Outlines, 4);
+            SwitchBtn(Config.ESP.Outlines);
+        });
+
+        GUILayout.Space(8f);
+        Header("Entidades");
+        GUILayout.Space(4f);
+        ESPRow("Jogadores",  Config.ESP.Players);
+        ESPRow("VBlood",     Config.ESP.VBloodCarriers);
+        ESPRow("Sangue",     Config.ESP.BloodSources);
+        ESPRow("Gate Boss",  Config.ESP.GateBosses);
+        ESPRow("Itens",      Config.ESP.Items);
+        ESPRow("Containers", Config.ESP.Containers);
+        ESPRow("Minerios",   Config.ESP.Ores);
+        ESPRow("Plantas",    Config.ESP.Plants);
+        ESPRow("Pesca",      Config.ESP.FishingSpots);
+        ESPRow("Cavalos",    Config.ESP.Horses);
+        ESPRow("Servos",     Config.ESP.Servants);
+        ESPRow("Carruagens", Config.ESP.Carriages);
+    }
+
+    // ── Combat Tab ─────────────────────────────────────────────────
+
+    private void DrawCombatTab()
+    {
+        _aimbotOpen = CollapsibleSection("Aimbot", _aimbotOpen, Config.Aimbot.Status);
+        if (_aimbotOpen)
+        {
+            GUILayout.Space(6f);
+            Row(() =>
+            {
+                GUILayout.Label("Modo", MenuTheme.LabelDimStyle,
+                    new GUILayoutOption[] { GUILayout.Width(60f) });
+                OptionBtn(_aimbotModes[Config.Aimbot.Mode.Value], Config.Aimbot.Mode, _aimbotModes.Length);
+            });
+
+            GUILayout.Space(6f);
+            SubHeader("ALVOS");
+            GUILayout.Space(2f);
+            Row(() =>
+            {
+                Toggle(Config.Aimbot.Players, "Players");
+                Toggle(Config.Aimbot.Bosses,  "Bosses");
+                Toggle(Config.Aimbot.Mobs,    "Mobs");
+            });
+            SwitchRow("Mostrar Mira", Config.Aimbot.DrawAimPosition);
+
+            GUILayout.Space(6f);
+            SubHeader("LIMITES");
+            GUILayout.Space(2f);
+            Slider("Distancia: {}m",  Config.Aimbot.MaxDistance,       1f, 50f);
+            Slider("Cursor: {}",      Config.Aimbot.MaxCursorDistance, 0f, 1000f);
+            Slider("CD Troca: {}s",   Config.Aimbot.SwitchCooldown,   0f, 1f, "F1");
+
+            GUILayout.Space(6f);
+            SubHeader("PESOS");
+            GUILayout.Space(2f);
+            Slider("Distancia: {}",   Config.Aimbot.DistanceWeight,       0f, 1f, "F2");
+            Slider("Cursor: {}",      Config.Aimbot.CursorDistanceWeight, 0f, 1f, "F2");
+            Slider("Vida: {}",        Config.Aimbot.HealthWeight,         0f, 1f, "F2");
+            Slider("Tipo: {}",        Config.Aimbot.EntityTypeWeight,     0f, 1f, "F2");
+        }
+
+        GUILayout.Space(6f);
+        HLine();
+        GUILayout.Space(2f);
+
+        _parryOpen = CollapsibleSection("Auto-Parry", _parryOpen, Config.AutoParry.Status);
+        if (_parryOpen)
+        {
+            GUILayout.Space(6f);
+            SubHeader("ALVOS");
+            GUILayout.Space(2f);
+            Row(() =>
+            {
+                Toggle(Config.AutoParry.Players, "Players");
+                Toggle(Config.AutoParry.Bosses,  "Bosses");
+                Toggle(Config.AutoParry.Mobs,    "Mobs");
+            });
+
+            GUILayout.Space(6f);
+            SubHeader("AJUSTES");
+            GUILayout.Space(2f);
+            Slider("Range: {}m", Config.AutoParry.Range,    1f,    20f);
+            Slider("CD: {}s",    Config.AutoParry.Cooldown, 0.05f, 1f, "F2");
+        }
+
+        GUILayout.Space(6f);
+        HLine();
+        GUILayout.Space(2f);
+
+        _assistOpen = SimpleCollapsible("Smart Assist", _assistOpen);
+        if (_assistOpen)
+        {
+            GUILayout.Space(6f);
+            SwitchRow("Aim-on-Cast",     Config.SmartAssist.Status);
+            SwitchRow("Quick-Cast Swap", Config.SmartAssist.QuickCast);
+        }
+    }
+
+    // ── Radar Tab ──────────────────────────────────────────────────
+
+    private void DrawRadarTab()
+    {
+        Row(() =>
+        {
+            GUILayout.Label("Radar", MenuTheme.HeaderStyle,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+            SwitchBtn(Config.Radar.Status);
+        });
+        GUILayout.Space(8f);
+        Slider("Tamanho: {}",  Config.Radar.Size,  100f, 400f);
+        Slider("Range: {}m",   Config.Radar.Range,  30f, 200f);
+    }
+
+    // ── Extras Tab ─────────────────────────────────────────────────
+
+    private void DrawExtrasTab()
+    {
+        Header("Automatizacao");
+        GUILayout.Space(6f);
+        SwitchRow("Auto-Fish", Config.Extras.AutoFishing);
+        GUILayout.Space(2f);
+        SwitchRow("Auto-Loot", Config.Extras.AutoLoot);
+
+        GUILayout.Space(8f);
+        HLine();
+        GUILayout.Space(2f);
+
+        Header("Visual");
+        GUILayout.Space(6f);
+        SwitchRow("No Fog", Config.Extras.NoFog);
+
+        GUILayout.Space(8f);
+        HLine();
+        GUILayout.Space(2f);
+
+        Header("Sistema");
+        GUILayout.Space(6f);
+        Row(() =>
+        {
+            GUILayout.Label("Camera", MenuTheme.LabelStyle,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+            if (Btn("Reset", GUILayout.Width(70f)))
+                Logic.MainCamera = Camera.main ?? throw new InvalidOperationException();
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  UI Components
+    // ═══════════════════════════════════════════════════════════════
+
+    private static void Row(Action content)
+    {
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
+        content();
+        GUILayout.EndHorizontal();
+    }
+
+    private static void HLine()
+    {
+        GUILayout.Box("", MenuTheme.SeparatorStyle,
+            new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(1f) });
+    }
+
+    private static void Header(string text)
+    {
+        GUILayout.Label(text, MenuTheme.HeaderStyle,
+            (Il2CppReferenceArray<GUILayoutOption>)null);
+    }
+
+    private static void SubHeader(string text)
+    {
+        GUILayout.Label(text, MenuTheme.SubHeaderStyle,
+            (Il2CppReferenceArray<GUILayoutOption>)null);
+    }
+
+    // ── Collapsible ────────────────────────────────────────────────
+
+    private static bool CollapsibleSection(string label, bool open, Config.FeatureConfig status)
+    {
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
+        var arrow = open ? "\u25BC " : "\u25B6 ";
+        if (GUILayout.Button(arrow + label, MenuTheme.CollapsibleStyle,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(30f) }))
+            open = !open;
+        SwitchBtn(status);
+        GUILayout.EndHorizontal();
+        return open;
+    }
+
+    private static bool SimpleCollapsible(string label, bool open)
+    {
+        var arrow = open ? "\u25BC " : "\u25B6 ";
+        if (GUILayout.Button(arrow + label, MenuTheme.CollapsibleStyle,
+                new GUILayoutOption[] { GUILayout.ExpandWidth(true), GUILayout.Height(30f) }))
+            open = !open;
+        return open;
+    }
+
+    // ── Switch Button (ON/OFF) ─────────────────────────────────────
+
+    private static void SwitchBtn(Config.FeatureConfig config)
+    {
+        var style = config.Enabled ? MenuTheme.SwitchOnStyle : MenuTheme.SwitchOffStyle;
+        if (GUILayout.Button(config.Enabled ? "ON" : "OFF", style,
+                new GUILayoutOption[] { GUILayout.Width(44f), GUILayout.Height(24f) }))
+            config.Enabled = !config.Enabled;
+    }
+
+    private static void SwitchRow(string label, Config.FeatureConfig config)
+    {
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Label(label, MenuTheme.LabelStyle,
+            new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+        SwitchBtn(config);
+        GUILayout.EndHorizontal();
+    }
+
+    // ── ESP Entity Row ─────────────────────────────────────────────
+
+    private static void ESPRow(string name, Config.FeatureConfig config)
+    {
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Label(name, MenuTheme.LabelStyle,
+            new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+        if (Btn(ColorOptions.GetColorName(config.Color), GUILayout.Width(70f)))
+            config.Color = (config.Color + 1) % ColorOptions.AllColors.Count;
+        SwitchBtn(config);
+        GUILayout.EndHorizontal();
+
+        if (config.MinimumQuality != 0f)
+            Slider("  Min: {}%", config, 1f, 100f);
+    }
+
+    // ── Buttons ────────────────────────────────────────────────────
+
+    private static bool Btn(string label, params GUILayoutOption[] options)
+    {
+        return GUILayout.Button(label, MenuTheme.SmallBtnStyle, options);
+    }
+
+    private static void OptionBtn(string label, ConfigEntry<int> config, int max, int add = 0)
+    {
+        if (GUILayout.Button(label.Replace("{}", config.Value.ToString()),
+                MenuTheme.SmallBtnStyle,
+                (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.Width(80f) }))
+            config.Value = (config.Value - add + 1) % max + add;
+    }
+
+    private static void OptionBtn(string label, Config.FeatureConfig config, int max, int add = 0)
+    {
+        if (GUILayout.Button(label.Replace("{}", config.Option.ToString()),
+                MenuTheme.SmallBtnStyle,
+                (GUILayoutOption[])(object)new GUILayoutOption[1] { GUILayout.Width(80f) }))
+            config.Option = (config.Option - add + 1) % max + add;
+    }
+
+    // ── Sliders ────────────────────────────────────────────────────
+
+    private static float Slider(string label, float value, float min, float max, string fmt = "F0")
+    {
+        GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Label(label.Replace("{}", value.ToString(fmt)),
+            MenuTheme.LabelDimStyle, new GUILayoutOption[] { GUILayout.Width(140f) });
+        GUILayout.Space(8f);
+        GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Space(7f);
+        value = GUILayout.HorizontalSlider(value, min, max,
+            MenuTheme.HSliderStyle, MenuTheme.HSliderThumbStyle,
+            System.Array.Empty<GUILayoutOption>());
+        GUILayout.EndVertical();
+        GUILayout.EndHorizontal();
+        return value;
+    }
+
+    private static void Slider(string label, Config.FeatureConfig config, float min, float max, string fmt = "F0")
+    {
+        config.MinimumQuality = Slider(label, config.MinimumQuality, min, max, fmt);
+    }
+
+    private static void Slider(string label, ConfigEntry<float> config, float min, float max, string fmt = "F0")
+    {
+        config.Value = Slider(label, config.Value, min, max, fmt);
+    }
+
+    // ── Toggles ────────────────────────────────────────────────────
+
+    private static void Toggle(Config.FeatureConfig config, string text)
+    {
+        config.Enabled = GUILayout.Toggle(config.Enabled, text,
+            MenuTheme.ToggleStyle, System.Array.Empty<GUILayoutOption>());
+    }
+
+    // ── Tooltip ────────────────────────────────────────────────────
+
+    private void ShowTooltip()
+    {
+        if (string.IsNullOrEmpty(GUI.tooltip)) return;
+        var mp = Event.current.mousePosition;
+        var gc = new GUIContent(GUI.tooltip);
+        var sz = MenuTheme.TooltipStyle.CalcSize(gc);
+        GUI.Label(new Rect(mp.x + 18f, mp.y - 4f, sz.x + 16f, sz.y + 8f), gc, MenuTheme.TooltipStyle);
+    }
 }

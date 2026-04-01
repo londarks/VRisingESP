@@ -35,6 +35,7 @@ public static class Aimbot
 	internal static bool Active;
 
 	private static Entity _currentTarget = Entity.Null;
+	internal static Entity CurrentTarget => _currentTarget;
 
 	private static Vector2 _cachedAimData = Vector2.zero;
 

@@ -17,8 +17,20 @@ namespace ExtrasensoryPerception.ESP;
 public static class SmartAssist
 {
     private static string _lastWeaponBuff = "";
+    private static float _lastSwapTime;
+    private const float SwapCooldown = 1.5f; // prevent rapid-fire swaps
     private static bool _wasCasting;
     private static bool _aimAssistActive;
+    private static bool _counterDetected;
+
+    // Enemy counter/parry buffs — when active on target, STOP attacking
+    private static readonly string[] CounterBuffPrefixes = {
+        "AB_Blood_BloodRite_Buff",         // Rito de Sangue
+        "AB_Illusion_MistTrance_Buff",     // Transe de Névoa
+        "AB_FrostBarrier_Buff",            // Onda de Frio
+        "AB_Storm_Discharge_Buff",         // Descarga
+        "AB_Storm_Discharge_StormShield",  // Descarga (variante)
+    };
 
     // Spells that should NOT trigger aim-lock (dashes, shields, counters, self-buffs)
     private static readonly string[] AimIgnorePrefixes = {
@@ -44,7 +56,10 @@ public static class SmartAssist
         "AB_Chaos_Barrier",
         "AB_Unholy_WardOfTheDamned",
         "AB_Unholy_Ward",
-        // Counters / Parry / Defensive
+        // Counters / Parry / Defensivos (quando EU uso)
+        "AB_Blood_BloodRite",
+        "AB_Illusion_MistTrance",
+        "AB_Storm_Discharge",
         "AB_Vampire_Parry",
         "AB_General_Counter",
         // Self-buffs / utility
@@ -54,6 +69,20 @@ public static class SmartAssist
         "AB_Shapeshift",
         // Interações (portas, itens, etc)
         "AB_Interact",
+        // Feed / consumíveis / montaria
+        "AB_Feed",
+        "AB_FeedBoss",
+        "AB_Subdue",
+        "AB_Consumable",
+        "AB_Gallop",
+        "AB_Horse_Vampire",
+        "AB_VampireMountLeap",
+        // AoE / dash-attacks
+        "AB_Frost_ArcticLeap",
+        "AB_Chaos_MercilessCharge",
+        "AB_Storm_LightningTyphoon",
+        // Montaria
+        "AB_Vampire_Spear_Primary_Mounted",
     };
 
     // Weapon swap → auto-cast key mapping
@@ -81,6 +110,7 @@ public static class SmartAssist
         var localChar = EntityList.LocalCharacter;
         if (localChar == Entity.Null || !localChar.Exists()) return;
 
+        CheckEnemyCounter();
         CheckAimOnCast(localChar);
         CheckWeaponSwap(localChar);
     }
@@ -155,6 +185,11 @@ public static class SmartAssist
             // Don't trigger on first detection (game start)
             if (string.IsNullOrEmpty(previousWeapon)) return;
 
+            // Cooldown to prevent rapid-fire triggers
+            float now = Time.time;
+            if (now - _lastSwapTime < SwapCooldown) return;
+            _lastSwapTime = now;
+
             // Find matching action
             foreach (var (weapon, key) in WeaponSwapActions)
             {
@@ -196,5 +231,92 @@ public static class SmartAssist
         return false;
     }
 
+    /// <summary>
+    /// Module 3: Detect if aimbot target has counter/parry buff active.
+    /// If so, disable aim to avoid feeding the counter.
+    /// </summary>
+    private static void CheckEnemyCounter()
+    {
+        if (!_aimAssistActive && !Aimbot.Active)
+        {
+            _counterDetected = false;
+            return;
+        }
+
+        // Check if current aimbot target has a counter buff
+        if (!Aimbot.HasValidTarget())
+        {
+            _counterDetected = false;
+            return;
+        }
+
+        try
+        {
+            var target = Aimbot.CurrentTarget;
+            if (target == Entity.Null || !target.Exists())
+            {
+                _counterDetected = false;
+                return;
+            }
+
+            bool hasCounter = HasCounterBuff(target);
+
+            if (hasCounter && !_counterDetected)
+            {
+                // Counter just activated — stop aiming at this target
+                _counterDetected = true;
+                Aimbot.Active = false;
+                string counterBuff = FindCounterBuffName(target);
+                FileLogger.Log($"[SmartAssist] COUNTER DETECTED on target — aim disabled (buff: {counterBuff})");
+            }
+            else if (!hasCounter && _counterDetected)
+            {
+                // Counter ended
+                _counterDetected = false;
+                FileLogger.Log($"[SmartAssist] COUNTER ENDED — aim re-enabled");
+            }
+        }
+        catch { _counterDetected = false; }
+    }
+
+    private static string FindCounterBuffName(Entity entity)
+    {
+        try
+        {
+            if (!VWorld.EntityManager.HasBuffer<BuffBuffer>(entity)) return "?";
+            var buffs = VWorld.EntityManager.GetBuffer<BuffBuffer>(entity);
+            var map = VWorld.PrefabLookupMap;
+            for (int i = 0; i < buffs.Length; i++)
+            {
+                string name = map.GetName(buffs[i].PrefabGuid);
+                foreach (var prefix in CounterBuffPrefixes)
+                {
+                    if (name.StartsWith(prefix, StringComparison.Ordinal)) return name;
+                }
+            }
+        }
+        catch { }
+        return "?";
+    }
+
+    private static bool HasCounterBuff(Entity entity)
+    {
+        if (!VWorld.EntityManager.HasBuffer<BuffBuffer>(entity)) return false;
+
+        var buffs = VWorld.EntityManager.GetBuffer<BuffBuffer>(entity);
+        var map = VWorld.PrefabLookupMap;
+
+        for (int i = 0; i < buffs.Length; i++)
+        {
+            string name = map.GetName(buffs[i].PrefabGuid);
+            foreach (var prefix in CounterBuffPrefixes)
+            {
+                if (name.StartsWith(prefix, StringComparison.Ordinal)) return true;
+            }
+        }
+        return false;
+    }
+
     internal static bool IsAimAssistActive => _aimAssistActive;
+    internal static bool IsCounterDetected => _counterDetected;
 }
