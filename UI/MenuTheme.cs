@@ -54,7 +54,14 @@ public static class MenuTheme
     internal static GUIStyle SeparatorStyle = new();
 
     // ── Init ───────────────────────────────────────────────────────
-    internal static void Init() => BuildStyles();
+    private static bool _initialized;
+
+    internal static void Init()
+    {
+        if (_initialized) return;
+        BuildStyles();
+        _initialized = true;
+    }
 
     // ── Style Builder ──────────────────────────────────────────────
     private static void BuildStyles()

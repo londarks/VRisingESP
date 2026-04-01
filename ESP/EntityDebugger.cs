@@ -24,7 +24,6 @@ namespace ExtrasensoryPerception.ESP;
 public static class EntityDebugger
 {
     private static bool _enabled;
-    private static float _lastLogTime;
 
     // Cache do estado anterior de cada mob pra detectar mudancas
     private struct MobState

@@ -196,11 +196,11 @@ public static class SmartAssist
                 if (currentWeapon.Contains(weapon))
                 {
                     FileLogger.Log($"[SmartAssist] WEAPON SWAP: {currentWeapon} -> auto-press {key}");
-                    new Thread(() =>
+                    System.Threading.ThreadPool.QueueUserWorkItem(_ =>
                     {
                         Thread.Sleep(50);
                         KeySimulator.PressKey(key);
-                    }).Start();
+                    });
                     break;
                 }
             }
@@ -259,14 +259,13 @@ public static class SmartAssist
                 return;
             }
 
-            bool hasCounter = HasCounterBuff(target);
+            string counterBuff = FindCounterBuffName(target);
+            bool hasCounter = counterBuff != null;
 
             if (hasCounter && !_counterDetected)
             {
-                // Counter just activated — stop aiming at this target
                 _counterDetected = true;
                 Aimbot.Active = false;
-                string counterBuff = FindCounterBuffName(target);
                 FileLogger.Log($"[SmartAssist] COUNTER DETECTED on target — aim disabled (buff: {counterBuff})");
             }
             else if (!hasCounter && _counterDetected)
@@ -279,11 +278,15 @@ public static class SmartAssist
         catch { _counterDetected = false; }
     }
 
+    /// <summary>
+    /// Returns the counter buff name if found, or null if no counter is active.
+    /// Single-pass: replaces both HasCounterBuff + FindCounterBuffName.
+    /// </summary>
     private static string FindCounterBuffName(Entity entity)
     {
         try
         {
-            if (!VWorld.EntityManager.HasBuffer<BuffBuffer>(entity)) return "?";
+            if (!VWorld.EntityManager.HasBuffer<BuffBuffer>(entity)) return null;
             var buffs = VWorld.EntityManager.GetBuffer<BuffBuffer>(entity);
             var map = VWorld.PrefabLookupMap;
             for (int i = 0; i < buffs.Length; i++)
@@ -296,25 +299,7 @@ public static class SmartAssist
             }
         }
         catch { }
-        return "?";
-    }
-
-    private static bool HasCounterBuff(Entity entity)
-    {
-        if (!VWorld.EntityManager.HasBuffer<BuffBuffer>(entity)) return false;
-
-        var buffs = VWorld.EntityManager.GetBuffer<BuffBuffer>(entity);
-        var map = VWorld.PrefabLookupMap;
-
-        for (int i = 0; i < buffs.Length; i++)
-        {
-            string name = map.GetName(buffs[i].PrefabGuid);
-            foreach (var prefix in CounterBuffPrefixes)
-            {
-                if (name.StartsWith(prefix, StringComparison.Ordinal)) return true;
-            }
-        }
-        return false;
+        return null;
     }
 
     internal static bool IsAimAssistActive => _aimAssistActive;

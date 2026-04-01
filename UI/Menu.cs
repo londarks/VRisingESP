@@ -19,7 +19,7 @@ internal class Menu : MonoBehaviour
     private bool _parryOpen  = true;
     private bool _assistOpen = true;
 
-    private readonly string[] _boxTypes    = { "Cheias", "Cantos" };
+    private readonly string[] _boxTypes    = { "Caixas", "Cantos", "HP Bar", "Ponto" };
     private readonly string[] _aimbotModes = { "Segurar", "Alternar" };
 
     private static readonly string[] TabLabels = { "ESP", "Combate", "Radar", "Extras" };
@@ -124,7 +124,7 @@ internal class Menu : MonoBehaviour
     {
         var style = Config.ModToggle.Value ? MenuTheme.SwitchOnStyle : MenuTheme.SwitchOffStyle;
         if (GUILayout.Button(Config.ModToggle.Value ? "ON" : "OFF", style,
-                new GUILayoutOption[] { GUILayout.Width(44f), GUILayout.Height(24f) }))
+                new GUILayoutOption[] { GUILayout.Width(38f), GUILayout.Height(20f) }))
             Config.ModToggle.Value = !Config.ModToggle.Value;
     }
 
@@ -360,7 +360,7 @@ internal class Menu : MonoBehaviour
     {
         var style = config.Enabled ? MenuTheme.SwitchOnStyle : MenuTheme.SwitchOffStyle;
         if (GUILayout.Button(config.Enabled ? "ON" : "OFF", style,
-                new GUILayoutOption[] { GUILayout.Width(44f), GUILayout.Height(24f) }))
+                new GUILayoutOption[] { GUILayout.Width(38f), GUILayout.Height(20f) }))
             config.Enabled = !config.Enabled;
     }
 
@@ -379,14 +379,29 @@ internal class Menu : MonoBehaviour
     {
         GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
         GUILayout.Label(name, MenuTheme.LabelStyle,
-            new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
-        if (Btn(ColorOptions.GetColorName(config.Color), GUILayout.Width(70f)))
+            new GUILayoutOption[] { GUILayout.Width(90f) });
+
+        // Slider inline se tiver qualidade minima
+        if (config.MinimumQuality != 0f)
+        {
+            GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
+            GUILayout.Space(7f);
+            config.MinimumQuality = GUILayout.HorizontalSlider(config.MinimumQuality, 1f, 100f,
+                MenuTheme.HSliderStyle, MenuTheme.HSliderThumbStyle,
+                System.Array.Empty<GUILayoutOption>());
+            GUILayout.EndVertical();
+            GUILayout.Label($"{(int)config.MinimumQuality}%", MenuTheme.LabelDimStyle,
+                new GUILayoutOption[] { GUILayout.Width(30f) });
+        }
+        else
+        {
+            GUILayout.Label("", new GUILayoutOption[] { GUILayout.ExpandWidth(true) });
+        }
+
+        if (Btn(ColorOptions.GetColorName(config.Color), GUILayout.Width(60f)))
             config.Color = (config.Color + 1) % ColorOptions.AllColors.Count;
         SwitchBtn(config);
         GUILayout.EndHorizontal();
-
-        if (config.MinimumQuality != 0f)
-            Slider("  Min: {}%", config, 1f, 100f);
     }
 
     // ── Buttons ────────────────────────────────────────────────────
@@ -418,8 +433,8 @@ internal class Menu : MonoBehaviour
     {
         GUILayout.BeginHorizontal((Il2CppReferenceArray<GUILayoutOption>)null);
         GUILayout.Label(label.Replace("{}", value.ToString(fmt)),
-            MenuTheme.LabelDimStyle, new GUILayoutOption[] { GUILayout.Width(140f) });
-        GUILayout.Space(8f);
+            MenuTheme.LabelDimStyle, new GUILayoutOption[] { GUILayout.Width(120f) });
+        GUILayout.Space(4f);
         GUILayout.BeginVertical((Il2CppReferenceArray<GUILayoutOption>)null);
         GUILayout.Space(7f);
         value = GUILayout.HorizontalSlider(value, min, max,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using ThreadPool = System.Threading.ThreadPool;
 using ExtrasensoryPerception.API;
 using ExtrasensoryPerception.Utils;
 using ProjectM;
@@ -122,57 +123,29 @@ public static class AutoParry
         Vector3 mobToPlayer = (playerPos - mobPos).normalized;
         float dot = Vector3.Dot(aimDir, mobToPlayer);
 
-        if (isInstantMelee)
-        {
-            // Instant melee (CastTime 0.01-0.04s): parry on cast START if aiming vaguely at us
-            // From logs: dot >= 0.85 + DistToAimLine <= ~2m = reliable hit
-            // But we only trigger on the FIRST frame of casting (not every frame)
-            if (!wasCasting)
-            {
-                // First frame of this cast - check if aimed at us
-                if (dot < 0.7f) return;
+        // Early dot check (shared between melee and ranged)
+        float minDot = isInstantMelee ? 0.7f : 0.85f;
+        if (isInstantMelee && wasCasting) return; // melee: only on cast START
+        if (dot < minDot) return;
 
-                Vector3 toPlayer = playerPos - mobPos;
-                float projLen = Vector3.Dot(toPlayer, aimDir);
-                if (projLen < 0) return;
-                Vector3 closestPoint = mobPos + aimDir * projLen;
-                float distToAimLine = Vector3.Distance(playerPos, closestPoint);
+        // Aim-line distance check (shared logic, no duplication)
+        Vector3 toPlayer = playerPos - mobPos;
+        float projLen = Vector3.Dot(toPlayer, aimDir);
+        if (projLen < 0) return;
+        Vector3 closestPoint = mobPos + aimDir * projLen;
+        float distToAimLine = Vector3.Distance(playerPos, closestPoint);
 
-                float playerRadius = 0.6f;
-                if (localChar.TryGetComponent<CollisionRadius>(out var pc)) playerRadius = pc.Radius;
-                float mobRadius = 0.5f;
-                if (enemy.TryGetComponent<CollisionRadius>(out var mc)) mobRadius = mc.Radius;
+        float playerRadius = 0.6f;
+        if (localChar.TryGetComponent<CollisionRadius>(out var pc)) playerRadius = pc.Radius;
+        float mobRadius = 0.5f;
+        if (enemy.TryGetComponent<CollisionRadius>(out var mc)) mobRadius = mc.Radius;
 
-                // Generous threshold for melee: includes lunge distance
-                if (distToAimLine > playerRadius + mobRadius + 2.0f) return;
+        float threshold = isInstantMelee ? playerRadius + mobRadius + 2.0f : playerRadius + mobRadius + 1.0f;
+        if (distToAimLine > threshold) return;
 
-                LogLocalPlayerState($"melee:{spellName}");
-                _lastParryTime = now;
-                new Thread(() => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value)).Start();
-            }
-        }
-        else
-        {
-            // Ranged/spell attacks (CastTime 0.2-0.8s): stricter aim check, can check every frame
-            if (dot < 0.85f) return;
-
-            Vector3 toPlayer = playerPos - mobPos;
-            float projLen = Vector3.Dot(toPlayer, aimDir);
-            if (projLen < 0) return;
-            Vector3 closestPoint = mobPos + aimDir * projLen;
-            float distToAimLine = Vector3.Distance(playerPos, closestPoint);
-
-            float playerRadius = 0.6f;
-            if (localChar.TryGetComponent<CollisionRadius>(out var pc)) playerRadius = pc.Radius;
-            float mobRadius = 0.5f;
-            if (enemy.TryGetComponent<CollisionRadius>(out var mc)) mobRadius = mc.Radius;
-
-            if (distToAimLine > playerRadius + mobRadius + 1.0f) return;
-
-            LogLocalPlayerState($"ranged:{spellName}");
-            _lastParryTime = now;
-            new Thread(() => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value)).Start();
-        }
+        LogLocalPlayerState($"{(isInstantMelee ? "melee" : "ranged")}:{spellName}");
+        _lastParryTime = now;
+        ThreadPool.QueueUserWorkItem(_ => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value));
     }
 
     internal static void CheckProjectiles()
@@ -234,7 +207,7 @@ public static class AutoParry
                     if (entity.IsAlly(localChar)) continue;
 
                     _lastParryTime = now;
-                    new Thread(() => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value)).Start();
+                    ThreadPool.QueueUserWorkItem(_ => KeySimulator.PressKey(Config.AutoParry.ParryKey.Value));
                     entities.Dispose();
                     return;
                 }

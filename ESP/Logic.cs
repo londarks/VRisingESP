@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using ExtrasensoryPerception.API;
 using ExtrasensoryPerception.Utils;
@@ -179,10 +178,7 @@ internal static class Logic
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
 						float num2 = Mathf.Max(ItemsSize.FontDistMin, ItemsSize.FontDist * num);
 						RenderQueue.String(new Vector2(screenPoint.x, screenPoint.y - val.y - num2), text, color, fontSize);
-						if (Config.ESP.Boxes.Enabled)
-						{
-							RenderQueue.Box(screenPoint - new Vector2(0f, val.y / 2f), val, color);
-						}
+						DrawEntityMarker(screenPoint, num, color, componentData3.Value / componentData3.MaxHealth.Value);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2), text2, color, fontSize);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
 					}
@@ -260,17 +256,15 @@ internal static class Logic
 					if (Config.ESP.VBloodCarriers.Enabled)
 					{
 						string name = VBloods.GetName(componentData.Source);
-						string text = $"HP: {(int)entity.Read<Health>().Value}";
+						var vbHealth = entity.Read<Health>();
+						string text = $"HP: {(int)vbHealth.Value}";
 						Color color = ColorOptions.GetColor(Config.ESP.VBloodCarriers.Color);
 						float num = 20f / Vector3.Distance(((Component)MainCamera).transform.position, position);
 						Vector2 val = ItemsSize.DefaultRectSize * num;
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
 						float num2 = Mathf.Max(ItemsSize.FontDistMin, ItemsSize.FontDist * num);
 						RenderQueue.String(new Vector2(screenPoint.x, screenPoint.y - val.y - num2), name, color, fontSize);
-						if (Config.ESP.Boxes.Enabled)
-						{
-							RenderQueue.Box(screenPoint - new Vector2(0f, val.y / 2f), val, color);
-						}
+						DrawEntityMarker(screenPoint, num, color, vbHealth.Value / vbHealth.MaxHealth.Value);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2), text, color, fontSize);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
 					}
@@ -363,15 +357,11 @@ internal static class Logic
 						Vector2 val = ItemsSize.DefaultRectSize * num;
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
 						float num2 = Mathf.Max(ItemsSize.FontDistMin, ItemsSize.FontDist * num);
+						float mobHp = entity.TryGetComponent<Health>(out var mh) ? mh.Value / mh.MaxHealth.Value : -1f;
 						RenderQueue.String(new Vector2(screenPoint.x, screenPoint.y - val.y - num2), text, color, fontSize);
-						if (Config.ESP.Boxes.Enabled)
-						{
-							RenderQueue.Box(screenPoint - new Vector2(0f, val.y / 2f), val, color);
-						}
+						DrawEntityMarker(screenPoint, num, color, mobHp);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2), text3, color, fontSize);
 						RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
-
-
 					}
 				}
 			}
@@ -763,11 +753,9 @@ internal static class Logic
 					Vector2 val = ItemsSize.DefaultRectSize * num;
 					int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
 					float num2 = Mathf.Max(ItemsSize.FontDistMin, ItemsSize.FontDist * num);
+					float srvHp = entity.TryGetComponent<Health>(out var sh) ? sh.Value / sh.MaxHealth.Value : -1f;
 					RenderQueue.String(new Vector2(screenPoint.x, screenPoint.y - val.y - num2), text, color, fontSize);
-					if (Config.ESP.Boxes.Enabled)
-					{
-						RenderQueue.Box(screenPoint - new Vector2(0f, val.y / 2f), val, color);
-					}
+					DrawEntityMarker(screenPoint, num, color, srvHp);
 					RenderQueue.String(screenPoint + new Vector2(0f, num2), text2, color, fontSize);
 					RenderQueue.String(screenPoint + new Vector2(0f, num2 * 2f), $"{distanceFromPlayer:F1}m", color, fontSize);
 				}
@@ -817,8 +805,46 @@ internal static class Logic
 
 	private static string CleanAndFormatName(string input, params string[] patterns)
 	{
-		string text = Enumerable.Aggregate<string, string>((System.Collections.Generic.IEnumerable<string>)Enumerable.ToArray<string>(Enumerable.Concat<string>((System.Collections.Generic.IEnumerable<string>)patterns, (System.Collections.Generic.IEnumerable<string>)new string[] { "_" })), input, (Func<string, string, string>)((string current, string pattern) => Regex.Replace(current, pattern, "")));
+		string text = input;
+		for (int i = 0; i < patterns.Length; i++)
+			text = Regex.Replace(text, patterns[i], "");
+		text = text.Replace("_", "");
 		return CamelCaseRegex.Replace(text, " $1");
+	}
+
+	/// <summary>
+	/// Draw entity marker based on ESP box mode.
+	/// 0=Full box, 1=Corners, 2=Health bar, 3=Dot only
+	/// </summary>
+	private static void DrawEntityMarker(Vector2 screenPoint, float scale, Color color, float healthPercent = -1f)
+	{
+		if (!Config.ESP.Boxes.Enabled) return;
+
+		int mode = Config.ESP.Boxes.Option;
+		Vector2 size = ItemsSize.DefaultRectSize * scale;
+
+		switch (mode)
+		{
+			case 0: // Caixas
+				RenderQueue.Box(screenPoint - new Vector2(0f, size.y / 2f), size, color);
+				break;
+			case 1: // Cantos
+				RenderQueue.Corners(screenPoint - new Vector2(0f, size.y / 2f), size, color);
+				break;
+			case 2: // Barra de Vida
+				if (healthPercent >= 0f)
+				{
+					float barW = Mathf.Max(40f, 55f * scale);
+					float barH = Mathf.Max(3f, 5f * scale);
+					Vector2 barPos = new Vector2(screenPoint.x - barW / 2f, screenPoint.y - size.y * 0.55f);
+					RenderQueue.HealthBar(barPos, barW, barH, healthPercent, color);
+				}
+				break;
+			case 3: // Ponto
+				float ds = Mathf.Max(3f, 5f * scale);
+				RenderQueue.FilledRect(screenPoint - new Vector2(ds / 2f, ds / 2f), new Vector2(ds, ds), color);
+				break;
+		}
 	}
 
 	private static bool CheckEntity(Entity entity)

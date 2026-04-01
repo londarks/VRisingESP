@@ -27,9 +27,27 @@ public static class RenderQueue
         public void Draw() => Primitives.DrawLine(from, to, color);
     }
 
+    private readonly struct QCorners(Vector2 position, Vector2 size, Color color)
+    {
+        public void Draw() => Primitives.DrawCorners(position, size, color);
+    }
+
+    private readonly struct QFilledRect(Vector2 position, Vector2 size, Color color)
+    {
+        public void Draw() => Primitives.DrawFilledRect(position, size, color);
+    }
+
+    private readonly struct QHealthBar(Vector2 position, float width, float height, float percent, Color color)
+    {
+        public void Draw() => Primitives.DrawHealthBar(position, width, height, percent, color);
+    }
+
     private static readonly List<QString> StringQueue = [];
     private static readonly List<QBox> BoxQueue = [];
     private static readonly List<QLine> LineQueue = [];
+    private static readonly List<QCorners> CornersQueue = [];
+    private static readonly List<QFilledRect> FilledRectQueue = [];
+    private static readonly List<QHealthBar> HealthBarQueue = [];
     private static readonly object Lock = new();
     
     // Strings
@@ -64,10 +82,25 @@ public static class RenderQueue
     // Lines
     public static void Line(Vector2 from, Vector2 to, Color color)
     {
-        lock (Lock)
-        {
-            LineQueue.Add(new QLine(from, to, color));
-        }
+        lock (Lock) { LineQueue.Add(new QLine(from, to, color)); }
+    }
+
+    // Corners
+    public static void Corners(Vector2 position, Vector2 size, Color color)
+    {
+        lock (Lock) { CornersQueue.Add(new QCorners(position, size, color)); }
+    }
+
+    // Filled rect
+    public static void FilledRect(Vector2 position, Vector2 size, Color color)
+    {
+        lock (Lock) { FilledRectQueue.Add(new QFilledRect(position, size, color)); }
+    }
+
+    // Health bar
+    public static void HealthBar(Vector2 position, float width, float height, float percent, Color color)
+    {
+        lock (Lock) { HealthBarQueue.Add(new QHealthBar(position, width, height, percent, color)); }
     }
 
     public static void Clear()
@@ -77,16 +110,22 @@ public static class RenderQueue
             StringQueue.Clear();
             BoxQueue.Clear();
             LineQueue.Clear();
+            CornersQueue.Clear();
+            FilledRectQueue.Clear();
+            HealthBarQueue.Clear();
         }
     }
-    
+
     public static void DrawQueued()
     {
         lock (Lock)
         {
-            foreach (var item in StringQueue) item.Draw();
+            foreach (var item in FilledRectQueue) item.Draw();
+            foreach (var item in HealthBarQueue) item.Draw();
             foreach (var item in BoxQueue) item.Draw();
+            foreach (var item in CornersQueue) item.Draw();
             foreach (var item in LineQueue) item.Draw();
+            foreach (var item in StringQueue) item.Draw();
         }
     }
 }

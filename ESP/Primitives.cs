@@ -11,25 +11,23 @@ public static class Primitives
 
     private static readonly Dictionary<Color, Texture2D> HollowTextures = new();
 
+    // Cached GUIStyle + GUIContent to avoid per-frame allocation in DrawString
+    private static readonly GUIStyle CachedStringStyle = new();
+    private static readonly GUIContent CachedContent = new();
+
     public static void DrawString<T>(Vector2 position, string label, Color color, int fontsize = 12,
         bool centered = true) where T : IDrawMode, new()
     {
         if (typeof(T) == typeof(Inverted)) position.y = Screen.height - position.y;
 
-        var stringStyle = new GUIStyle
-        {
-            fontSize = fontsize,
-            richText = true,
-            normal =
-            {
-                textColor = color
-            },
-            fontStyle = FontStyle.Bold
-        };
+        CachedStringStyle.fontSize = fontsize;
+        CachedStringStyle.richText = true;
+        CachedStringStyle.normal.textColor = color;
+        CachedStringStyle.fontStyle = FontStyle.Bold;
 
-        var guiContent = new GUIContent(label);
-        var size = stringStyle.CalcSize(guiContent);
-        GUI.Label(new Rect(centered ? position - size / 2f : position, size), guiContent, stringStyle);
+        CachedContent.text = label;
+        var size = CachedStringStyle.CalcSize(CachedContent);
+        GUI.Label(new Rect(centered ? position - size / 2f : position, size), CachedContent, CachedStringStyle);
     }
 
     public static void DrawString(Vector2 position, string label, Color color, int fontsize = 12, bool centered = true)
@@ -71,6 +69,38 @@ public static class Primitives
         GUI.DrawTexture(new Rect(from.x, from.y, Vector2.Distance(from, to), 2f), Texture2D.whiteTexture);
         GUIUtility.RotateAroundPivot(-angle, from);
         GUI.color = prevColor;
+    }
+
+    public static void DrawCorners(Vector2 position, Vector2 size, Color color)
+    {
+        float cl = Mathf.Min(size.x, size.y) * 0.28f;
+        float x = position.x - size.x / 2f, y = position.y, w = size.x, h = size.y;
+        // Top-left
+        DrawLine(new Vector2(x, y), new Vector2(x + cl, y), color);
+        DrawLine(new Vector2(x, y), new Vector2(x, y + cl), color);
+        // Top-right
+        DrawLine(new Vector2(x + w, y), new Vector2(x + w - cl, y), color);
+        DrawLine(new Vector2(x + w, y), new Vector2(x + w, y + cl), color);
+        // Bottom-left
+        DrawLine(new Vector2(x, y + h), new Vector2(x + cl, y + h), color);
+        DrawLine(new Vector2(x, y + h), new Vector2(x, y + h - cl), color);
+        // Bottom-right
+        DrawLine(new Vector2(x + w, y + h), new Vector2(x + w - cl, y + h), color);
+        DrawLine(new Vector2(x + w, y + h), new Vector2(x + w, y + h - cl), color);
+    }
+
+    public static void DrawFilledRect(Vector2 position, Vector2 size, Color color)
+    {
+        var prev = GUI.color;
+        GUI.color = color;
+        GUI.DrawTexture(new Rect(position.x, position.y, size.x, size.y), Texture2D.whiteTexture);
+        GUI.color = prev;
+    }
+
+    public static void DrawHealthBar(Vector2 position, float width, float height, float percent, Color color)
+    {
+        DrawFilledRect(position, new Vector2(width, height), new Color(0f, 0f, 0f, 0.55f));
+        DrawFilledRect(position, new Vector2(width * Mathf.Clamp01(percent), height), color);
     }
 
     private static Texture2D CreateHollowTexture(int width, int height, Color borderColor)

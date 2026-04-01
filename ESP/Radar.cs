@@ -161,17 +161,30 @@ public static class Radar
         GUI.color = prev;
     }
 
+    // Pre-computed sin/cos for ring drawing (24 segments)
+    private const int RingSegments = 24;
+    private static readonly float[] RingCos = new float[RingSegments + 1];
+    private static readonly float[] RingSin = new float[RingSegments + 1];
+    private static bool _ringInit;
+
     private static void DrawRing(float cx, float cy, float radius, Color color)
     {
-        // Simular circulo com linhas
-        int segments = 24;
-        for (int i = 0; i < segments; i++)
+        if (!_ringInit)
         {
-            float a1 = (float)i / segments * Mathf.PI * 2f;
-            float a2 = (float)(i + 1) / segments * Mathf.PI * 2f;
+            for (int i = 0; i <= RingSegments; i++)
+            {
+                float a = (float)i / RingSegments * Mathf.PI * 2f;
+                RingCos[i] = Mathf.Cos(a);
+                RingSin[i] = Mathf.Sin(a);
+            }
+            _ringInit = true;
+        }
+
+        for (int i = 0; i < RingSegments; i++)
+        {
             Primitives.DrawLine(
-                new Vector2(cx + Mathf.Cos(a1) * radius, cy + Mathf.Sin(a1) * radius),
-                new Vector2(cx + Mathf.Cos(a2) * radius, cy + Mathf.Sin(a2) * radius),
+                new Vector2(cx + RingCos[i] * radius, cy + RingSin[i] * radius),
+                new Vector2(cx + RingCos[i + 1] * radius, cy + RingSin[i + 1] * radius),
                 color);
         }
     }

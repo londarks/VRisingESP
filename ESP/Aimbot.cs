@@ -1,7 +1,4 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using ExtrasensoryPerception.API;
 using ExtrasensoryPerception.Utils;
 using ProjectM;
@@ -236,35 +233,24 @@ public static class Aimbot
 
 		_targetLostFrames = 0;
 
-		TargetCandidate currentTarget = Enumerable.FirstOrDefault<TargetCandidate>(
-			Enumerable.Where<TargetCandidate>(
-				(IEnumerable<TargetCandidate>)Candidates,
-				(Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Entity == _currentTarget)
-			)
-		) ?? new TargetCandidate();
+		// Find current target in candidates + best scoring candidate (no LINQ, no allocations)
+		TargetCandidate currentCandidate = null;
+		TargetCandidate bestCandidate = null;
+		float bestScore = float.MinValue;
+		for (int i = 0; i < Candidates.Count; i++)
+		{
+			var c = Candidates[i];
+			if (c.Entity == _currentTarget) currentCandidate = c;
+			if (c.Score > bestScore) { bestScore = c.Score; bestCandidate = c; }
+		}
+		currentCandidate ??= new TargetCandidate();
 
 		float time = Time.time;
 		if (!IsCurrentTargetValid() || time - _lastTargetSwitchTime > Config.Aimbot.SwitchCooldown.Value)
 		{
-			IEnumerator<TargetCandidate> enumerator = Enumerable.Where<TargetCandidate>(
-				(IEnumerable<TargetCandidate>)Candidates,
-				(Func<TargetCandidate, bool>)((TargetCandidate candidate) => candidate.Score > currentTarget.Score)
-			).GetEnumerator();
-			try
+			if (bestCandidate != null && bestCandidate.Score > currentCandidate.Score)
 			{
-				while (((IEnumerator)enumerator).MoveNext())
-				{
-					TargetCandidate current = enumerator.Current;
-					currentTarget = current;
-				}
-			}
-			finally
-			{
-				((IDisposable)enumerator)?.Dispose();
-			}
-			if (_currentTarget != currentTarget.Entity)
-			{
-				_currentTarget = currentTarget.Entity;
+				_currentTarget = bestCandidate.Entity;
 				_lastTargetSwitchTime = time;
 			}
 		}
