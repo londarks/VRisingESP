@@ -42,7 +42,7 @@ internal class Menu : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown((KeyCode)277))
+        if (Input.GetKeyDown(KeyCode.Delete))
             _showMenu = !_showMenu;
     }
 
@@ -237,8 +237,9 @@ internal class Menu : MonoBehaviour
             GUILayout.Space(6f);
             SubHeader("AJUSTES");
             GUILayout.Space(2f);
-            Slider("Range: {}m", Config.AutoParry.Range,    1f,    20f);
-            Slider("CD: {}s",    Config.AutoParry.Cooldown, 0.05f, 1f, "F2");
+            Slider("Range: {}m",      Config.AutoParry.Range,           1f,    20f);
+            Slider("Anti-spam: {}s",  Config.AutoParry.Cooldown,        0.05f, 1f, "F2");
+            Slider("CD Magia: {}s",   Config.AutoParry.AbilityCooldown, 0f,    20f, "F1");
         }
 
         GUILayout.Space(6f);

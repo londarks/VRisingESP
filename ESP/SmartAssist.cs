@@ -18,7 +18,7 @@ public static class SmartAssist
 {
     private static string _lastWeaponBuff = "";
     private static float _lastSwapTime;
-    private const float SwapCooldown = 1.5f; // prevent rapid-fire swaps
+    private const float SwapCooldown = 0.3f; // minimum time between swap detections
     private static bool _wasCasting;
     private static bool _aimAssistActive;
     private static bool _counterDetected;
@@ -115,6 +115,7 @@ public static class SmartAssist
         CheckWeaponSwap(localChar);
     }
 
+
     /// <summary>
     /// Module 1: Activate aimbot when local player is casting aimed abilities.
     /// </summary>
@@ -126,7 +127,6 @@ public static class SmartAssist
 
         if (isCasting && !_wasCasting)
         {
-            // Cast just started — check if it's an aimed ability
             string spellName = GetCastSpellName(abilityBar);
 
             if (!string.IsNullOrEmpty(spellName) && !IsAimIgnored(spellName))
@@ -138,7 +138,6 @@ public static class SmartAssist
         }
         else if (!isCasting && _wasCasting)
         {
-            // Cast ended — deactivate aimbot
             if (_aimAssistActive)
             {
                 _aimAssistActive = false;
@@ -149,6 +148,7 @@ public static class SmartAssist
 
         _wasCasting = isCasting;
     }
+
 
     /// <summary>
     /// Module 2: Detect weapon swap and auto-press the configured ability.
@@ -196,11 +196,7 @@ public static class SmartAssist
                 if (currentWeapon.Contains(weapon))
                 {
                     FileLogger.Log($"[SmartAssist] WEAPON SWAP: {currentWeapon} -> auto-press {key}");
-                    System.Threading.ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        Thread.Sleep(50);
-                        KeySimulator.PressKey(key);
-                    });
+                    System.Threading.ThreadPool.QueueUserWorkItem(_ => KeySimulator.PressKey(key));
                     break;
                 }
             }

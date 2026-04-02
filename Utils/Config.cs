@@ -190,6 +190,7 @@ internal static class Config
 		internal static readonly ConfigEntry<KeyCode> ParryKey = ConfigFile.Bind<KeyCode>("AutoParry", "ParryKey", KeyCode.G, "Tecla do parry.");
 		internal static readonly ConfigEntry<float> Range = ConfigFile.Bind<float>("AutoParry", "Range", 15f, "Distancia maxima para spells ranged (metros). Melee usa 15m fixo.");
 		internal static readonly ConfigEntry<float> Cooldown = ConfigFile.Bind<float>("AutoParry", "Cooldown", 0.15f, "Cooldown entre parrys (segundos).");
+		internal static readonly ConfigEntry<float> AbilityCooldown = ConfigFile.Bind<float>("AutoParry", "AbilityCooldown", 10f, "Cooldown real da habilidade de parry (segundos). 0 = ignorar.");
 		internal static bool Enabled => Status.Enabled;
 	}
 

@@ -82,6 +82,10 @@ public static class AutoParry
         float now = Time.time;
         if (now - _lastParryTime < Config.AutoParry.Cooldown.Value) return;
 
+        // Ability CD: respeita o cooldown real da magia de parry (setado pelo usuario)
+        float abilityCd = Config.AutoParry.AbilityCooldown.Value;
+        if (abilityCd > 0 && now - _lastParryTime < abilityCd) return;
+
         if (!enemy.TryGetComponent<AbilityBar_Shared>(out var abilityBar)) return;
 
         bool isCasting = abilityBar.SyncedIsCasting;
@@ -123,12 +127,12 @@ public static class AutoParry
         Vector3 mobToPlayer = (playerPos - mobPos).normalized;
         float dot = Vector3.Dot(aimDir, mobToPlayer);
 
-        // Early dot check (shared between melee and ranged)
-        float minDot = isInstantMelee ? 0.7f : 0.85f;
+        // Dot check: melee precisa ser mais preciso pra não disparar em ataque pra outro alvo
+        float minDot = isInstantMelee ? 0.85f : 0.85f;
         if (isInstantMelee && wasCasting) return; // melee: only on cast START
         if (dot < minDot) return;
 
-        // Aim-line distance check (shared logic, no duplication)
+        // Aim-line distance check
         Vector3 toPlayer = playerPos - mobPos;
         float projLen = Vector3.Dot(toPlayer, aimDir);
         if (projLen < 0) return;
@@ -140,7 +144,8 @@ public static class AutoParry
         float mobRadius = 0.5f;
         if (enemy.TryGetComponent<CollisionRadius>(out var mc)) mobRadius = mc.Radius;
 
-        float threshold = isInstantMelee ? playerRadius + mobRadius + 2.0f : playerRadius + mobRadius + 1.0f;
+        // Threshold apertado: melee 1.5m, ranged 1.0m (evita falso positivo quando ataca outro alvo)
+        float threshold = isInstantMelee ? playerRadius + mobRadius + 1.0f : playerRadius + mobRadius + 1.0f;
         if (distToAimLine > threshold) return;
 
         LogLocalPlayerState($"{(isInstantMelee ? "melee" : "ranged")}:{spellName}");
@@ -154,6 +159,8 @@ public static class AutoParry
 
         float now = Time.time;
         if (now - _lastParryTime < Config.AutoParry.Cooldown.Value) return;
+        float abilityCd = Config.AutoParry.AbilityCooldown.Value;
+        if (abilityCd > 0 && now - _lastParryTime < abilityCd) return;
 
         var localChar = EntityList.LocalCharacter;
         if (localChar == Entity.Null || !localChar.Exists()) return;
