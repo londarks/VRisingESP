@@ -84,7 +84,7 @@ internal class Menu : MonoBehaviour
             MasterSwitch();
         });
         GUILayout.Space(6f);
-        GUILayout.Label("babel \u00b7 londarks", MenuTheme.CreditStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
+        GUILayout.Label("Babel \u00b7 Londarks", MenuTheme.CreditStyle, (Il2CppReferenceArray<GUILayoutOption>)null);
         GUILayout.Space(6f);
 
         GUILayout.EndVertical();
@@ -172,6 +172,11 @@ internal class Menu : MonoBehaviour
         ESPRow("Cavalos",    Config.ESP.Horses);
         ESPRow("Servos",     Config.ESP.Servants);
         ESPRow("Carruagens", Config.ESP.Carriages);
+
+        GUILayout.Space(8f);
+        Header("Alertas");
+        GUILayout.Space(4f);
+        SwitchRow("Bip Inimigo", Config.ESP.EnemyAlert);
     }
 
     // ── Combat Tab ─────────────────────────────────────────────────

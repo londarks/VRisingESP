@@ -171,6 +171,8 @@ internal static class Config
 		internal static readonly FeatureConfig Servants = new FeatureConfig("ESP", "Servants", 4, 0f);
 
 		internal static readonly FeatureConfig Carriages = new FeatureConfig("ESP", "Carriages", 7, 0f);
+
+		internal static readonly FeatureConfig EnemyAlert = new FeatureConfig("ESP", "EnemyAlert");
 	}
 
 	internal static class Radar

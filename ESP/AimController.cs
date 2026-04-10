@@ -36,9 +36,14 @@ public class AimController : MonoBehaviour
 		Aimbot.CursorPosition = MouseSimulator.CursorPosition;
 		Aimbot.UpdateAimData();
 
-		// Shift + Left Click to lock/unlock target
-		if (Input.GetKey(KeyCode.LeftShift) && Input.GetMouseButtonDown(0))
-			Aimbot.TryLockTarget();
+		// Right click = lock target, Shift+Right click = unlock
+		if (Input.GetMouseButtonDown(1))
+		{
+			if (Input.GetKey(KeyCode.LeftShift))
+				Aimbot.UnlockTarget();
+			else
+				Aimbot.TryLockTarget();
+		}
 
 		if (!Config.SmartAssist.Enabled)
 		{

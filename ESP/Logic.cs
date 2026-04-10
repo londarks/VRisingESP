@@ -99,6 +99,7 @@ internal static class Logic
 		{
 			return;
 		}
+		AlertSound.BeginFrame();
 		EntityList.Players.ForEach(delegate(Entity entity)
 		{
 			//IL_0000: Unknown result type (might be due to invalid IL or missing references)
@@ -152,6 +153,9 @@ internal static class Logic
 				bool flag = entity.IsAlly(EntityList.LocalPlayer);
 				float playerDist = GetDistanceFromPlayer(position);
 
+				// Alerta sonoro para inimigos
+				if (!flag) AlertSound.OnEnemyPlayerDetected(entity.Index);
+
 				// Auto-Parry e Debug (roda sempre, mesmo fora da tela)
 				if (!flag) AutoParry.CheckEnemy(entity, playerDist, true, false);
 				EntityDebugger.AnalyzeNearbyEntity(entity, componentData.Name.ToString(), playerDist);
@@ -172,7 +176,8 @@ internal static class Logic
 					{
 						string text = $"[{(int)(componentData4.ArmorLevel.Value + componentData4.WeaponLevel.Value + componentData4.SpellLevel.Value)}] {componentData.Name.ToString()}";
 						string text2 = $"HP: {(int)componentData3.Value} | BL: {(int)componentData2.Quality}%";
-						Color color = (flag ? Color.green : ColorOptions.GetColor(Config.ESP.Players.Color));
+						Color color = Aimbot.IsLockedTarget(entity) ? Color.white
+							: (flag ? Color.green : ColorOptions.GetColor(Config.ESP.Players.Color));
 						float num = 20f / Vector3.Distance(((Component)MainCamera).transform.position, position);
 						Vector2 val = ItemsSize.DefaultRectSize * num;
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
@@ -258,7 +263,8 @@ internal static class Logic
 						string name = VBloods.GetName(componentData.Source);
 						var vbHealth = entity.Read<Health>();
 						string text = $"HP: {(int)vbHealth.Value}";
-						Color color = ColorOptions.GetColor(Config.ESP.VBloodCarriers.Color);
+						Color color = Aimbot.IsLockedTarget(entity) ? Color.white
+							: ColorOptions.GetColor(Config.ESP.VBloodCarriers.Color);
 						float num = 20f / Vector3.Distance(((Component)MainCamera).transform.position, position);
 						Vector2 val = ItemsSize.DefaultRectSize * num;
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
@@ -352,7 +358,8 @@ internal static class Logic
 						PrefabLookupMap prefabLookupMap = PrefabLookupMap;
 						string text2 = prefabLookupMap.GetName(componentData.UnitBloodType).Replace("BloodType_", "");
 						string text3 = $"{text2} ({(int)componentData.BloodQuality}%)";
-						Color color = ColorOptions.GetColor(Config.ESP.BloodSources.Color);
+						Color color = Aimbot.IsLockedTarget(entity) ? Color.white
+							: ColorOptions.GetColor(Config.ESP.BloodSources.Color);
 						float num = 20f / Vector3.Distance(((Component)MainCamera).transform.position, position);
 						Vector2 val = ItemsSize.DefaultRectSize * num;
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
@@ -416,7 +423,8 @@ internal static class Logic
 					{
 						string text = CleanAndFormatName(entity.GetName(), "CHAR", "VBlood");
 						string text2 = $"HP: {(int)entity.Read<Health>().Value}";
-						Color color = ColorOptions.GetColor(Config.ESP.GateBosses.Color);
+						Color color = Aimbot.IsLockedTarget(entity) ? Color.white
+							: ColorOptions.GetColor(Config.ESP.GateBosses.Color);
 						float num = 20f / Vector3.Distance(((Component)MainCamera).transform.position, position);
 						int fontSize = (int)Mathf.Max(ItemsSize.FontSizeMin, ItemsSize.FontSize * num);
 						float num2 = Mathf.Max(ItemsSize.FontDistMin, ItemsSize.FontDist * num);

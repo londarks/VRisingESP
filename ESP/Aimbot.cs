@@ -55,22 +55,17 @@ public static class Aimbot
 	// ── Lock Target System ─────────────────────────────────────────
 	private static Entity _lockedTarget = Entity.Null;
 	internal static bool HasLockedTarget => _lockedTarget != Entity.Null && _lockedTarget.Exists();
+	internal static bool IsLockedTarget(Entity entity) => _lockedTarget != Entity.Null && _lockedTarget == entity;
 	private static float _lockLostTime;
 	private const float LockGraceSeconds = 1.5f;
 
 	internal static readonly List<TargetCandidate> Candidates = new List<TargetCandidate>();
 
 	/// <summary>
-	/// Shift+Click: lock the best candidate near cursor, or unlock if already locked.
+	/// Right click: lock the best candidate near cursor. Replaces previous lock.
 	/// </summary>
 	internal static void TryLockTarget()
 	{
-		if (HasLockedTarget)
-		{
-			UnlockTarget();
-			return;
-		}
-
 		if (Candidates.Count == 0) return;
 
 		TargetCandidate best = null;
